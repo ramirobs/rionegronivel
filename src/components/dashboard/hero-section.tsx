@@ -8,6 +8,9 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+import ShareButton from './share-button';
+import NotificationDialog from './notification-dialog';
+
 export type RiskLevel = 'normal' | 'attention' | 'alert' | 'emergency';
 
 interface HeroSectionProps {
@@ -18,6 +21,7 @@ interface HeroSectionProps {
   };
   lastUpdate: string;
   riskLevel: RiskLevel;
+  precip24h?: number;
   onRefresh?: () => void;
   isRefreshing?: boolean;
 }
@@ -61,6 +65,7 @@ export default function HeroSection({
   trend,
   lastUpdate,
   riskLevel,
+  precip24h = 0,
   onRefresh,
   isRefreshing = false,
 }: HeroSectionProps) {
@@ -154,7 +159,7 @@ export default function HeroSection({
               <button
                 onClick={onRefresh}
                 disabled={isRefreshing}
-                className="ml-1 p-1 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-md transition-colors"
+                className="ml-1 p-1 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                 title="Atualizar dados agora"
               >
                 <RefreshCw className={cn("h-3 w-3", isRefreshing && "animate-spin text-blue-600")} />
@@ -162,6 +167,27 @@ export default function HeroSection({
             )}
           </div>
         </div>
+      </div>
+
+      {/* Barra de Ações Rápidas: Compartilhar no WhatsApp & Ativar Notificações */}
+      <div className="relative z-10 mt-5 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <ShareButton
+            level={level}
+            trend={trend}
+            precip24h={precip24h}
+            lastUpdate={lastUpdate}
+            riskLevel={riskLevel}
+          />
+          <NotificationDialog
+            currentLevel={level}
+            trendRate={trend.direction === 'rising' ? Math.abs(trend.rate) : -Math.abs(trend.rate)}
+          />
+        </div>
+
+        <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
+          Telemetria Oficial ANA & SNIRH
+        </span>
       </div>
     </div>
   );

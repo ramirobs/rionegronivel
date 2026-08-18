@@ -250,6 +250,7 @@ export default function DashboardPage() {
                 trend={trend}
                 lastUpdate={riverData?.latest?.date ?? lastFetch}
                 riskLevel={riskLevel}
+                precip24h={precip24h}
                 onRefresh={handleManualRefresh}
                 isRefreshing={refreshing}
               />
