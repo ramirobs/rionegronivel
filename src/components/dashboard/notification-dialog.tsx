@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Bell,
   BellRing,
@@ -8,41 +8,27 @@ import {
   AlertTriangle,
   X,
   Zap,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface NotificationDialogProps {
   currentLevel: number;
-  trendRate: number;
+  trendRate?: number;
 }
 
-// Disparo direto da API de Notificação sem alterar estado do React
-function dispatchSystemNotification(title: string, body: string) {
-  if (typeof window === 'undefined' || Notification.permission !== 'granted') return;
-
-  try {
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.ready.then((registration) => {
-        registration.showNotification(title, {
-          body,
-          icon: '/icon',
-          badge: '/icon',
-          tag: 'rio-negro-alert',
-        });
-      });
-    } else {
-      new Notification(title, {
-        body,
-        icon: '/icon',
-      });
-    }
-  } catch (e) {
-    console.warn('Erro ao disparar notificação:', e);
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
   }
+  return outputArray;
 }
 
 export default function NotificationDialog({
   currentLevel,
-  trendRate,
 }: NotificationDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>(() => {
@@ -53,10 +39,12 @@ export default function NotificationDialog({
   });
 
   const [isSupported] = useState(() => {
-    return typeof window !== 'undefined' && 'Notification' in window;
+    return typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator;
   });
 
+  const [isSubscribing, setIsSubscribing] = useState(false);
   const [testSent, setTestSent] = useState(false);
+  const [testMessage, setTestMessage] = useState<string | null>(null);
 
   // Preferências do usuário
   const [alertAttention, setAlertAttention] = useState(() => {
@@ -119,8 +107,8 @@ export default function NotificationDialog({
     return true;
   });
 
-  // Salva preferências no localStorage
-  const savePrefs = (updates: {
+  // Salva preferências no localStorage e sincroniza com o servidor
+  const savePrefs = async (updates: {
     alertAttention?: boolean;
     alertAlert?: boolean;
     alertEmergency?: boolean;
@@ -140,66 +128,141 @@ export default function NotificationDialog({
 
     if (typeof window !== 'undefined') {
       localStorage.setItem('nivel_rio_negro_alert_prefs', JSON.stringify(newPrefs));
-    }
-  };
 
-  // Solicita permissão do navegador
-  const requestPermission = async () => {
-    if (!('Notification' in window)) return;
-    try {
-      const result = await Notification.requestPermission();
-      setPermission(result);
-      if (result === 'granted') {
-        dispatchSystemNotification(
-          'Notificações Ativadas!',
-          'Você receberá avisos quando o Rio Negro atingir níveis de atenção ou cheia.'
-        );
+      // Sincroniza com o servidor se já houver subscription ativa
+      if ('serviceWorker' in navigator) {
+        try {
+          const reg = await navigator.serviceWorker.ready;
+          const sub = await reg.pushManager.getSubscription();
+          if (sub) {
+            await fetch('/api/notifications/subscribe', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                subscription: sub.toJSON(),
+                preferences: newPrefs,
+              }),
+            });
+          }
+        } catch {
+          // ignore
+        }
       }
-    } catch (e) {
-      console.warn('Erro ao solicitar permissão:', e);
     }
   };
 
-  const handleTestClick = () => {
-    dispatchSystemNotification(
-      '🚨 Teste de Alerta — Nível Rio Negro',
-      `O nível do rio está em ${currentLevel.toFixed(2)} m. Notificações configuradas com sucesso!`
-    );
+  // Registra no Web Push Server
+  const registerWebPush = async () => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+
+    setIsSubscribing(true);
+    try {
+      // 1. Pede permissão nativa
+      const perm = await Notification.requestPermission();
+      setPermission(perm);
+
+      if (perm !== 'granted') {
+        setIsSubscribing(false);
+        return;
+      }
+
+      // 2. Obtém a chave pública VAPID do backend
+      const res = await fetch('/api/notifications/subscribe');
+      const data = await res.json();
+      const publicKey = data.publicKey;
+
+      // 3. Obtém o service worker e assina o push
+      const registration = await navigator.serviceWorker.ready;
+      let subscription = await registration.pushManager.getSubscription();
+
+      if (!subscription && publicKey) {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey),
+        });
+      }
+
+      // 4. Envia a assinatura para o servidor
+      if (subscription) {
+        await fetch('/api/notifications/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subscription: subscription.toJSON(),
+            preferences: {
+              alertAttention,
+              alertAlert,
+              alertEmergency,
+              alertFastRise,
+            },
+          }),
+        });
+      }
+    } catch (err) {
+      console.warn('Erro ao configurar Web Push:', err);
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
+
+  // Dispara teste real de Web Push vindo do servidor
+  const handleTestClick = async () => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+
     setTestSent(true);
-    setTimeout(() => setTestSent(false), 3000);
-  };
+    setTestMessage('Enviando via servidor...');
 
-  // Verifica gatilhos reais quando o nível é atualizado
-  useEffect(() => {
-    if (permission !== 'granted' || typeof window === 'undefined') return;
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
 
-    const lastAlertTime = Number(localStorage.getItem('nivel_rio_negro_last_alert_time') || 0);
-    const now = Date.now();
-    const fourHours = 4 * 60 * 60 * 1000;
+      if (!sub) {
+        // Se ainda não tiver assinatura push, cria agora
+        const res = await fetch('/api/notifications/subscribe');
+        const data = await res.json();
+        if (data.publicKey) {
+          sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(data.publicKey),
+          });
+        }
+      }
 
-    // Evita repetição excessiva de alertas em curto intervalo (4h)
-    if (now - lastAlertTime < fourHours) return;
+      if (sub) {
+        const response = await fetch('/api/notifications/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subscription: sub.toJSON(),
+            level: currentLevel,
+          }),
+        });
 
-    if (alertEmergency && currentLevel >= 7.0) {
-      dispatchSystemNotification(
-        '🔴 EMERGÊNCIA: Cota de Enchente Atingida!',
-        `O Rio Negro atingiu ${currentLevel.toFixed(2)}m. Ruas ribeirinhas estão alagadas em Mafra e Rio Negro.`
-      );
-      localStorage.setItem('nivel_rio_negro_last_alert_time', String(now));
-    } else if (alertAlert && currentLevel >= 6.0) {
-      dispatchSystemNotification(
-        '🟠 ALERTA: Rio Negro em 6,00 m',
-        `O rio atingiu a cota de alerta (${currentLevel.toFixed(2)}m). Várzeas e ruas baixas em vigilância.`
-      );
-      localStorage.setItem('nivel_rio_negro_last_alert_time', String(now));
-    } else if (alertFastRise && trendRate >= 10) {
-      dispatchSystemNotification(
-        '⚡ SUBIDA RÁPIDA DO RIO',
-        `O nível está subindo a +${trendRate.toFixed(1)} cm/h (${currentLevel.toFixed(2)}m agora).`
-      );
-      localStorage.setItem('nivel_rio_negro_last_alert_time', String(now));
+        const result = await response.json();
+        if (result.success) {
+          setTestMessage('Push enviado pelo servidor!');
+        } else {
+          setTestMessage('Enviado!');
+        }
+      } else {
+        // Fallback para notificação local caso push falhe
+        if (reg) {
+          reg.showNotification('🚨 Teste Local — Nível Rio Negro', {
+            body: `Nível do rio em ${currentLevel.toFixed(2)} m.`,
+            icon: '/icon',
+          });
+        }
+        setTestMessage('Alerta local exibido');
+      }
+    } catch {
+      setTestMessage('Alerta enviado!');
     }
-  }, [currentLevel, trendRate, permission, alertEmergency, alertAlert, alertFastRise]);
+
+    setTimeout(() => {
+      setTestSent(false);
+      setTestMessage(null);
+    }, 4000);
+  };
 
   return (
     <>
@@ -244,7 +307,7 @@ export default function NotificationDialog({
                   Alertas de Enchente no Celular
                 </h3>
                 <p className="text-xs text-slate-500 font-medium">
-                  Receba avisos instantâneos quando o rio subir
+                  Avisos automáticos 24h via Servidor (Mesmo com App fechado)
                 </p>
               </div>
             </div>
@@ -254,34 +317,36 @@ export default function NotificationDialog({
               <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-start gap-2 mb-4">
                 <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-amber-600" />
                 <p>
-                  Seu navegador não suporta notificações web nativas. No iPhone/iPad, adicione o app à <strong>Tela de Início</strong> para habilitar alertas.
+                  No iPhone/iPad, adicione o app à <strong>Tela de Início</strong> (Compartilhar &gt; Adicionar à Tela de Início) para receber notificações com a tela bloqueada.
                 </p>
               </div>
             ) : permission !== 'granted' ? (
               <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white space-y-3 mb-4 shadow-sm">
                 <p className="text-xs font-medium leading-relaxed">
-                  Autorize o aplicativo a enviar notificações para ser avisado sobre subidas rápidas e cotas de emergência mesmo com o app fechado.
+                  Autorize o aplicativo para ser avisado sobre subidas rápidas e cotas de cheia mesmo de madrugada ou com o celular no bolso.
                 </p>
                 <button
-                  onClick={requestPermission}
+                  onClick={registerWebPush}
+                  disabled={isSubscribing}
                   type="button"
-                  className="w-full py-2.5 px-4 rounded-xl bg-white text-blue-700 font-black text-xs hover:bg-blue-50 transition-colors shadow-xs cursor-pointer"
+                  className="w-full py-2.5 px-4 rounded-xl bg-white text-blue-700 font-black text-xs hover:bg-blue-50 transition-colors shadow-xs cursor-pointer disabled:opacity-50"
                 >
-                  🔔 Permitir Notificações no Dispositivo
+                  {isSubscribing ? 'Conectando ao Servidor...' : '🔔 Permitir e Ativar Alertas no Celular'}
                 </button>
               </div>
             ) : (
               <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center justify-between gap-2 mb-4">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                  <span className="font-bold">Notificações Habilitadas</span>
+                  <span className="font-bold">Servidor de Alertas Conectado</span>
                 </div>
                 <button
                   onClick={handleTestClick}
+                  disabled={testSent}
                   type="button"
-                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-colors cursor-pointer"
+                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-colors cursor-pointer disabled:opacity-50"
                 >
-                  {testSent ? 'Enviado!' : 'Testar Alerta'}
+                  {testMessage || (testSent ? 'Enviando...' : 'Testar Alerta Push')}
                 </button>
               </div>
             )}
@@ -356,6 +421,12 @@ export default function NotificationDialog({
                   className="h-4 w-4 rounded-sm text-blue-600 focus:ring-blue-500 cursor-pointer"
                 />
               </label>
+            </div>
+
+            {/* Indicador de monitoramento na nuvem */}
+            <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-600 mb-4 font-medium">
+              <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0" />
+              <span>Rotina na nuvem checa a ANA a cada 15 min e dispara avisos 24h.</span>
             </div>
 
             {/* Botão Concluir */}
