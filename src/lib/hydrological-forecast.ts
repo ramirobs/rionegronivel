@@ -104,22 +104,47 @@ export function calculateHydrologicalForecast(
   for (let i = 0; i < nDays; i++) {
     const dayForecast = forecastDaily[i];
 
+    if (i === 0) {
+      // Dia 0 é o ponto de partida ("Hoje"). O nível base esperado é a cota atual medida.
+      runningLevel = safeCurrent;
+      const expected = Number(runningLevel.toFixed(2));
+      const minLvl = expected;
+      const maxLvl = expected;
+
+      projectedDays.push({
+        date: dayForecast.date,
+        dateFormatted: dayForecast.dateFormatted,
+        dayOfWeek: dayForecast.dayOfWeek,
+        expectedLevel: expected,
+        minLevel: minLvl,
+        maxLevel: maxLvl,
+        forecastRain: dayForecast.precipitationSum,
+        rainProbability: dayForecast.precipitationProbability,
+        floodProbability: expected >= RISK_THRESHOLDS.EMERGENCY ? 99 : 0,
+        alertProbability: expected >= RISK_THRESHOLDS.ALERT ? 99 : 0,
+        riskLevel: expected >= RISK_THRESHOLDS.EMERGENCY ? 'emergency' : expected >= RISK_THRESHOLDS.ALERT ? 'alert' : expected >= RISK_THRESHOLDS.ATTENTION ? 'attention' : 'normal',
+        weatherDescription: dayForecast.weatherDescription,
+        weatherIcon: dayForecast.weatherIcon,
+      });
+      continue;
+    }
+
     // 1. Recessão natural do nível (perda por drenagem em direção à cota base)
     const excessAboveBase = Math.max(0, runningLevel - BASELINE_RIVER_LEVEL);
-    const dailyRecession = excessAboveBase > 0 ? Math.min(0.35, excessAboveBase * 0.12 + 0.05) : 0;
+    const dailyRecession = excessAboveBase > 0 ? Math.min(0.28, excessAboveBase * 0.09 + 0.04) : 0;
 
     // 2. Acréscimo hidrológico da chuva prevista
     const inflowRise = rainContributions[i];
 
-    // 3. Efeito da inércia da taxa de variação recente no primeiro dia
-    const inertia = i === 0 ? Math.max(-0.25, Math.min(0.35, recentTrendRate * 12)) : 0;
+    // 3. Efeito da inércia da taxa de variação recente no primeiro dia de projeção
+    const inertia = i === 1 ? Math.max(-0.15, Math.min(0.25, recentTrendRate * 12)) : 0;
 
     // Novo nível esperado
     runningLevel = Math.max(2.5, runningLevel - dailyRecession + inflowRise + inertia);
     const expected = Number(runningLevel.toFixed(2));
 
     // Margem de incerteza (cresce com o horizonte temporal)
-    const uncertainty = Number((0.15 + i * 0.08 + (dayForecast.precipitationSum > 15 ? 0.35 : 0.1)).toFixed(2));
+    const uncertainty = Number((0.12 + (i - 1) * 0.07 + (dayForecast.precipitationSum > 15 ? 0.30 : 0.08)).toFixed(2));
     const minLvl = Number(Math.max(2.0, expected - uncertainty).toFixed(2));
     const maxLvl = Number((expected + uncertainty * 1.35).toFixed(2));
 
@@ -130,7 +155,6 @@ export function calculateHydrologicalForecast(
     }
 
     // 4. Cálculo estocástico de probabilidade de atingir cotas críticas
-    // Baseado na distância do nível projetado até os limiares e na incerteza (distribuição normal aproximada)
     const floodZ = (RISK_THRESHOLDS.EMERGENCY - expected) / (uncertainty * 1.1);
     const alertZ = (RISK_THRESHOLDS.ALERT - expected) / (uncertainty * 1.1);
 

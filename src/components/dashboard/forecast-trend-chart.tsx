@@ -22,6 +22,34 @@ interface ForecastTrendChartProps {
   projection: HydrologicalProjectionResult;
 }
 
+function TodayBadge(props: { viewBox?: { x?: number; y?: number } }) {
+  const x = props.viewBox?.x ?? 0;
+  return (
+    <g transform={`translate(${x}, 8)`}>
+      <rect
+        x={-44}
+        y={0}
+        width={88}
+        height={20}
+        rx={10}
+        fill="#2563eb"
+        stroke="#ffffff"
+        strokeWidth={2}
+      />
+      <text
+        x={0}
+        y={14}
+        textAnchor="middle"
+        fill="#ffffff"
+        fontSize={10}
+        fontWeight={800}
+      >
+        Hoje (Agora)
+      </text>
+    </g>
+  );
+}
+
 export default function ForecastTrendChart({ data, projection }: ForecastTrendChartProps) {
   const trend = projection.overallTrend;
   const isRising = trend.direction === 'rising';
@@ -98,7 +126,7 @@ export default function ForecastTrendChart({ data, projection }: ForecastTrendCh
       {/* Gráfico Recharts */}
       <div className="w-full h-[360px] sm:h-[400px] min-h-0">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 15, right: 10, left: -15, bottom: 0 }}>
+          <ComposedChart data={data} margin={{ top: 35, right: 12, left: -15, bottom: 0 }}>
             <defs>
               {/* Gradiente para área de incerteza da previsão */}
               <linearGradient id="forecastUncertaintyGrad" x1="0" y1="0" x2="0" y2="1">
@@ -233,13 +261,7 @@ export default function ForecastTrendChart({ data, projection }: ForecastTrendCh
                 stroke="#2563eb"
                 strokeWidth={2}
                 strokeDasharray="4 4"
-                label={{
-                  position: 'insideTopRight',
-                  value: 'Hoje (Agora)',
-                  fill: '#2563eb',
-                  fontSize: 11,
-                  fontWeight: 800,
-                }}
+                label={<TodayBadge />}
               />
             )}
 

@@ -155,9 +155,12 @@ export async function GET() {
       });
     } else {
       lastPoint.isToday = true;
+      lastPoint.observedLevel = currentLevel;
       lastPoint.expectedLevel = currentLevel;
       lastPoint.minLevel = currentLevel;
       lastPoint.maxLevel = currentLevel;
+      lastPoint.level = currentLevel;
+      lastPoint.dayOfWeek = 'Hoje';
     }
 
     // Adiciona os dias futuros projetados
