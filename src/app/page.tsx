@@ -14,6 +14,7 @@ import ReturnPeriod from '@/components/dashboard/return-period';
 import EmergencyContacts from '@/components/dashboard/emergency-contacts';
 import ForecastTrendChart from '@/components/dashboard/forecast-trend-chart';
 import ForecastDailyCards from '@/components/dashboard/forecast-daily-cards';
+import SkeletonDashboard from '@/components/dashboard/skeleton-dashboard';
 import { classifyRisk } from '@/lib/statistics';
 import type { RiskLevel } from '@/lib/constants';
 import type { WeatherForecastResponse } from '@/lib/weather-api';
@@ -207,17 +208,7 @@ export default function DashboardPage() {
   })();
 
   if (loading) {
-    return (
-      <div className="min-h-[70vh] flex items-center justify-center">
-        <div className="text-center bg-white p-8 rounded-2xl border border-slate-200 shadow-sm max-w-sm w-full mx-4">
-          <div className="w-12 h-12 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <h3 className="text-base font-bold text-slate-900">Carregando Telemetria...</h3>
-          <p className="text-xs text-slate-500 mt-1 font-medium">
-            Consultando estações da ANA, SNIRH e Open-Meteo
-          </p>
-        </div>
-      </div>
-    );
+    return <SkeletonDashboard />;
   }
 
   return (
@@ -251,6 +242,7 @@ export default function DashboardPage() {
                 lastUpdate={riverData?.latest?.date ?? lastFetch}
                 riskLevel={riskLevel}
                 precip24h={precip24h}
+                recentReadings={riverData?.data || []}
                 onRefresh={handleManualRefresh}
                 isRefreshing={refreshing}
               />
