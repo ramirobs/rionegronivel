@@ -73,7 +73,7 @@ export default function NavigationTabs({
       {/* ========================================================================= */}
       {/* 1. Desktop & Tablet Top Navigation Bar (Segmented Pills Sticky)          */}
       {/* ========================================================================= */}
-      <div className="sticky top-[61px] z-30 -mx-3 sm:-mx-6 lg:-mx-8 px-3 sm:px-6 lg:px-8 py-2 bg-slate-50/90 backdrop-blur-md border-b border-slate-200/80 mb-6">
+      <div className="hidden md:block sticky top-[61px] z-30 -mx-3 sm:-mx-6 lg:-mx-8 px-3 sm:px-6 lg:px-8 py-2 bg-slate-50/90 backdrop-blur-md border-b border-slate-200/80 mb-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 overflow-x-auto no-scrollbar py-1">
           <nav
             className="flex items-center gap-1.5 sm:gap-2 bg-slate-200/70 p-1.5 rounded-2xl w-full sm:w-auto"
