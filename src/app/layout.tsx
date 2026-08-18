@@ -52,32 +52,31 @@ export default function RootLayout({
         <header className="border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 z-50 pt-safe">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700 flex items-center justify-center shadow-md shadow-blue-500/25 p-1.5">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 border border-amber-500/30 flex items-center justify-center shadow-md shadow-amber-500/10 p-1.5 shrink-0">
                 <svg
-                  className="w-full h-full text-white"
+                  className="w-full h-full"
                   viewBox="0 0 24 24"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
                 >
+                  {/* Triângulo de Alerta Dourado */}
                   <path
-                    d="M12 2.5C12 2.5 5 11.5 5 15.5C5 19.0899 8.13401 22 12 22C15.866 22 19 19.0899 19 15.5C19 11.5 12 2.5 12 2.5Z"
-                    fill="currentColor"
-                    fillOpacity="0.3"
-                  />
-                  <path
-                    d="M12 2.5C12 2.5 5 11.5 5 15.5C5 19.0899 8.13401 22 12 22C15.866 22 19 19.0899 19 15.5C19 11.5 12 2.5 12 2.5Z"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
+                    d="M12 3.5L20.5 18.5C21 19.5 20.2 20.5 19 20.5H5C3.8 20.5 3 19.5 3.5 18.5L12 3.5Z"
+                    stroke="#f59e0b"
+                    strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
+                  {/* Ponto de Exclamação */}
+                  <path d="M12 8.5V12" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" />
+                  <circle cx="12" cy="14.5" r="1" fill="#fbbf24" />
+                  {/* Onda de Água Subindo */}
                   <path
-                    d="M6 16C8 14.5 10.5 14.5 12.5 16C14.5 17.5 17 17.5 18 16"
-                    stroke="currentColor"
+                    d="M4.5 17.5C7 15.5 9.5 15.5 12 17.5C14.5 19.5 17 19.5 19.5 17.5"
+                    stroke="#38bdf8"
                     strokeWidth="2"
                     strokeLinecap="round"
                   />
-                  <circle cx="12" cy="9.5" r="1.5" fill="currentColor" />
                 </svg>
               </div>
               <div>

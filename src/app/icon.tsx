@@ -17,99 +17,139 @@ export default function Icon() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 40%, #0f172a 100%)',
+          background: 'linear-gradient(145deg, #091428 0%, #031d44 50%, #020c1b 100%)',
           borderRadius: '24%',
           position: 'relative',
           overflow: 'hidden',
-          padding: '24px',
+          padding: '20px',
         }}
       >
-        {/* Glow ambient circle */}
+        {/* Glow ambient de alerta e água */}
         <div
           style={{
             position: 'absolute',
-            top: '-20%',
-            right: '-20%',
-            width: '320px',
-            height: '320px',
+            top: '-15%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '360px',
+            height: '360px',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(56, 189, 248, 0.45) 0%, rgba(56, 189, 248, 0) 70%)',
+            background: 'radial-gradient(circle, rgba(245, 158, 11, 0.35) 0%, rgba(245, 158, 11, 0) 70%)',
           }}
         />
 
-        {/* Soft bottom glow */}
         <div
           style={{
             position: 'absolute',
-            bottom: '-15%',
-            left: '-15%',
-            width: '280px',
-            height: '280px',
+            bottom: '-20%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '400px',
+            height: '400px',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(14, 165, 233, 0.3) 0%, rgba(14, 165, 233, 0) 70%)',
+            background: 'radial-gradient(circle, rgba(2, 132, 199, 0.5) 0%, rgba(2, 132, 199, 0) 70%)',
           }}
         />
 
-        {/* Outer squircle highlight ring */}
+        {/* Borda externa com reflexo de vidro */}
         <div
           style={{
             position: 'absolute',
-            inset: '12px',
+            inset: '10px',
             borderRadius: '22%',
-            border: '2px solid rgba(255, 255, 255, 0.18)',
+            border: '2px solid rgba(255, 255, 255, 0.15)',
           }}
         />
 
-        {/* Central Icon Illustration (Water Droplet + Dynamic River Waves + Telemetry Pulse) */}
+        {/* Ilustração Central: Triângulo de Alerta de Enchente + Régua + Ondas do Rio */}
         <svg
-          width="320"
-          height="320"
+          width="360"
+          height="360"
           viewBox="0 0 100 100"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
-          {/* Glowing Droplet Shape */}
+          <defs>
+            {/* Gradiente do Triângulo de Alerta */}
+            <linearGradient id="alertTriangleGrad" x1="50" y1="12" x2="50" y2="88" gradientUnits="userSpaceOnUse">
+              <stop stopColor="#fbbf24" />
+              <stop offset="0.6" stopColor="#f59e0b" />
+              <stop offset="1" stopColor="#d97706" />
+            </linearGradient>
+
+            {/* Gradiente da Água / Enchente */}
+            <linearGradient id="waterSurgeGrad" x1="50" y1="52" x2="50" y2="92" gradientUnits="userSpaceOnUse">
+              <stop stopColor="#38bdf8" />
+              <stop offset="0.4" stopColor="#0284c7" />
+              <stop offset="1" stopColor="#034d82" />
+            </linearGradient>
+
+            {/* Gradiente da Régua */}
+            <linearGradient id="rulerGrad" x1="78" y1="28" x2="78" y2="80" gradientUnits="userSpaceOnUse">
+              <stop stopColor="#ef4444" />
+              <stop offset="0.4" stopColor="#f59e0b" />
+              <stop offset="1" stopColor="#10b981" />
+            </linearGradient>
+          </defs>
+
+          {/* Sombra / Glow do Triângulo */}
           <path
-            d="M50 8C50 8 18 48 18 68C18 85.6731 32.3269 92 50 92C67.6731 92 82 85.6731 82 68C82 48 50 8 50 8Z"
-            fill="url(#dropletGrad)"
-            stroke="rgba(255, 255, 255, 0.35)"
-            strokeWidth="2.5"
+            d="M50 14L86 78C88 81.5 85.5 86 81.5 86H18.5C14.5 86 12 81.5 14 78L50 14Z"
+            fill="rgba(245, 158, 11, 0.15)"
           />
 
-          {/* Deep River Wave Layer */}
+          {/* Triângulo Principal de Emergência */}
           <path
-            d="M20 72C28 65 38 65 48 71C58 77 68 77 80 70V84C74 89 62 92 50 92C38 92 26 89 20 84V72Z"
-            fill="#0369a1"
-            opacity="0.75"
-          />
-
-          {/* Front Dynamic River Surge Wave */}
-          <path
-            d="M21 78C30 73 40 73 50 78C60 83 70 83 79 77V81C72 88 61 92 50 92C39 92 28 88 21 81V78Z"
-            fill="#38bdf8"
-          />
-
-          {/* Crest Highlight Curve */}
-          <path
-            d="M21 78C30 73 40 73 50 78C60 83 70 83 79 77"
-            stroke="#ffffff"
-            strokeWidth="2"
+            d="M50 16L83.5 76.5C85 79.5 83 83 79.5 83H20.5C17 83 15 79.5 16.5 76.5L50 16Z"
+            stroke="url(#alertTriangleGrad)"
+            strokeWidth="5"
+            strokeLinejoin="round"
             strokeLinecap="round"
           />
 
-          {/* Top Telemetry Alert Pulse Dot */}
-          <circle cx="50" cy="40" r="5.5" fill="#ffffff" />
-          <circle cx="50" cy="40" r="10" stroke="rgba(255, 255, 255, 0.5)" strokeWidth="1.5" />
-          <circle cx="50" cy="40" r="15" stroke="rgba(255, 255, 255, 0.25)" strokeWidth="1" strokeDasharray="2 2" />
+          {/* Símbolo de Exclamação (!) no Topo do Triângulo */}
+          <path
+            d="M50 31V49"
+            stroke="#fbbf24"
+            strokeWidth="5"
+            strokeLinecap="round"
+          />
+          <circle cx="50" cy="57" r="2.8" fill="#fbbf24" />
 
-          {/* Gradients definitions */}
-          <defs>
-            <linearGradient id="dropletGrad" x1="50" y1="8" x2="50" y2="92" gradientUnits="userSpaceOnUse">
-              <stop stopColor="#38bdf8" />
-              <stop offset="0.5" stopColor="#0284c7" />
-              <stop offset="1" stopColor="#0f172a" />
-            </linearGradient>
-          </defs>
+          {/* Ondas Subindo (Cheia do Rio Negro) */}
+          {/* Camada de Água de Fundo */}
+          <path
+            d="M17 72C25 66 35 66 45 71C55 76 65 76 75 70C79 67.5 82.5 70 83 75.5V81.5C82.5 82.5 81 83 79.5 83H20.5C18 83 17 81.5 16.5 79L17 72Z"
+            fill="#0369a1"
+            opacity="0.8"
+          />
+
+          {/* Camada de Água Frontal em Elevação */}
+          <path
+            d="M18 76C27 71 37 71 47 76C57 81 67 81 76 75C78.5 73.5 81 75 82 78.5V81.5C81.5 82.5 80.5 83 79.5 83H20.5C18.5 83 17.5 82 17 80.5L18 76Z"
+            fill="url(#waterSurgeGrad)"
+          />
+
+          {/* Crista de Espuma da Onda Branca */}
+          <path
+            d="M18 76C27 71 37 71 47 76C57 81 67 81 77 75"
+            stroke="#ffffff"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          />
+
+          {/* Régua Fluviométrica Vertical com Níveis de Perigo */}
+          <rect x="74" y="32" width="5" height="42" rx="2.5" fill="#0f172a" stroke="rgba(255,255,255,0.4)" strokeWidth="1" />
+          {/* Ticks da Régua */}
+          <line x1="74" y1="38" x2="79" y2="38" stroke="#ef4444" strokeWidth="1.5" />
+          <line x1="74" y1="46" x2="78" y2="46" stroke="#f97316" strokeWidth="1.5" />
+          <line x1="74" y1="54" x2="78" y2="54" stroke="#f59e0b" strokeWidth="1.5" />
+          <line x1="74" y1="62" x2="78" y2="62" stroke="#10b981" strokeWidth="1.5" />
+          <line x1="74" y1="70" x2="79" y2="70" stroke="#0284c7" strokeWidth="1.5" />
+
+          {/* Ponto / Farol de Alerta no Topo */}
+          <circle cx="50" cy="16" r="3.5" fill="#ffffff" />
+          <circle cx="50" cy="16" r="7" stroke="rgba(251, 191, 36, 0.6)" strokeWidth="1.5" />
         </svg>
       </div>
     ),

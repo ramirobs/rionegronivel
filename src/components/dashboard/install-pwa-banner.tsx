@@ -88,14 +88,22 @@ export default function InstallPWABanner() {
       <div className="fixed bottom-20 md:bottom-6 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-md z-40 animate-in slide-in-from-bottom-5 duration-300">
         <div className="bg-slate-900/95 text-white backdrop-blur-md p-3.5 sm:p-4 rounded-2xl border border-slate-700 shadow-2xl flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-400 via-blue-600 to-indigo-600 flex items-center justify-center p-2 shrink-0 shadow-sm">
-              <svg className="w-full h-full text-white" viewBox="0 0 24 24" fill="none">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 border border-amber-500/30 flex items-center justify-center p-2 shrink-0 shadow-sm">
+              <svg className="w-full h-full" viewBox="0 0 24 24" fill="none">
                 <path
-                  d="M12 2.5C12 2.5 5 11.5 5 15.5C5 19.0899 8.13401 22 12 22C15.866 22 19 19.0899 19 15.5C19 11.5 12 2.5 12 2.5Z"
-                  fill="currentColor"
-                  fillOpacity="0.3"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
+                  d="M12 3.5L20.5 18.5C21 19.5 20.2 20.5 19 20.5H5C3.8 20.5 3 19.5 3.5 18.5L12 3.5Z"
+                  stroke="#f59e0b"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path d="M12 8.5V12" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" />
+                <circle cx="12" cy="14.5" r="1" fill="#fbbf24" />
+                <path
+                  d="M4.5 17.5C7 15.5 9.5 15.5 12 17.5C14.5 19.5 17 19.5 19.5 17.5"
+                  stroke="#38bdf8"
+                  strokeWidth="2"
+                  strokeLinecap="round"
                 />
               </svg>
             </div>
