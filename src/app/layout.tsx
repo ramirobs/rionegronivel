@@ -38,6 +38,8 @@ export const metadata: Metadata = {
   },
 };
 
+import InstallPWABanner from "@/components/dashboard/install-pwa-banner";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -110,6 +112,9 @@ export default function RootLayout({
         <main className="px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto py-4 sm:py-6 pb-20 md:pb-6">
           {children}
         </main>
+
+        {/* Banner de Instalação PWA no Celular */}
+        <InstallPWABanner />
 
         {/* Footer */}
         <footer className="border-t border-slate-200 bg-white mt-12 py-8 pb-24 md:pb-8">
