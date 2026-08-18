@@ -1,6 +1,4 @@
-'use client';
-
-import { Phone, Shield, ExternalLink, MapPin } from 'lucide-react';
+import { Phone, Shield } from 'lucide-react';
 
 export default function EmergencyContacts() {
   const contacts = [

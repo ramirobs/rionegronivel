@@ -58,7 +58,7 @@ export default function ReturnPeriod({ table, annualMaxima }: ReturnPeriodProps)
 
         <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold border border-slate-200">
           <HelpCircle className="h-3.5 w-3.5 text-slate-500" />
-          <span>Baseado em décadas de registros da ANA</span>
+          <span>Baseado em {annualMaxima.length ? `${annualMaxima.length} anos` : 'décadas'} de registros da ANA</span>
         </div>
       </div>
 

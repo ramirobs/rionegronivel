@@ -3,7 +3,8 @@ import { fetchWeatherForecast } from '@/lib/weather-api';
 import { calculateHydrologicalForecast } from '@/lib/hydrological-forecast';
 import { fetchTelemetricData, fetchHistoricalData } from '@/lib/ana-api';
 import { cleanRiverData, calculateTrend, getLatestReading } from '@/lib/data-processing';
-import { PRIMARY_STATION, STATIONS } from '@/lib/constants';
+import { PRIMARY_STATION } from '@/lib/constants';
+import type { RiverDataPoint } from '@/lib/ana-api';
 
 export const revalidate = 1800; // 30 minutos (ISR)
 export const dynamic = 'force-dynamic';
@@ -44,7 +45,7 @@ export async function GET() {
     const startStr = formatAnaDate(startDate);
     const endStr = formatAnaDate(endDate);
 
-    let rawData: any[] = [];
+    let rawData: RiverDataPoint[] = [];
     let recentRain24h = 0;
 
     try {

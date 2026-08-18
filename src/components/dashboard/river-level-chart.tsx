@@ -46,9 +46,9 @@ export default function RiverLevelChart({ data, period }: RiverLevelChartProps) 
               tickLine={false}
               axisLine={false}
               dy={8}
-              tickFormatter={(val: any) => {
+              tickFormatter={(val: string | number) => {
                 try {
-                  const d = new Date(val as string | number);
+                  const d = new Date(val);
                   if (isNaN(d.getTime())) return String(val);
                   return d.toLocaleDateString('pt-BR', {
                     day: '2-digit',
@@ -80,9 +80,10 @@ export default function RiverLevelChart({ data, period }: RiverLevelChartProps) 
                 fontWeight: '600',
               }}
               itemStyle={{ color: '#0284c7' }}
-              labelFormatter={(label: any) => {
+              labelFormatter={(label: React.ReactNode) => {
+                if (label === null || label === undefined) return '';
                 try {
-                  const d = new Date(label as string | number);
+                  const d = new Date(String(label));
                   if (isNaN(d.getTime())) return String(label);
                   return d.toLocaleString('pt-BR', {
                     day: '2-digit',

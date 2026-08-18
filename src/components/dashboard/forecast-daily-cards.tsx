@@ -1,6 +1,6 @@
 'use client';
 
-import { CloudRain, Droplets, Calendar, ShieldCheck, AlertTriangle, ShieldAlert, Sparkles } from 'lucide-react';
+import { CloudRain, Droplets, ShieldCheck, AlertTriangle, ShieldAlert } from 'lucide-react';
 import type { WeatherForecastResponse } from '@/lib/weather-api';
 import type { HydrologicalProjectionResult, ProjectedDay } from '@/lib/hydrological-forecast';
 

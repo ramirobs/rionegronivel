@@ -106,7 +106,10 @@ export default function FloodRuler({ currentLevel }: FloodRulerProps) {
               {/* Conteúdo Explicativo */}
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-bold text-slate-900">{stage.name}</span>
+                  <span className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                    <StageIcon className="w-4 h-4 text-slate-600" />
+                    {stage.name}
+                  </span>
                   <span
                     className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${stage.badgeColor}`}
                   >

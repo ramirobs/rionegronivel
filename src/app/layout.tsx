@@ -11,7 +11,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Nível Rio Negro — Monitoramento e Alerta de Enchentes em RioMafra",
+  title: "Nível Rio Negro",
   description:
     "App para monitorar perigos de enchente em RioMafra. Acompanhe o nível do Rio Negro em tempo real com dados da telemetria e alertas para Rio Negro (PR) e Mafra (SC).",
   keywords: [
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     title: "Nível Rio Negro",
   },
   openGraph: {
-    title: "Nível Rio Negro — RioMafra",
+    title: "Nível Rio Negro",
     description: "App para monitorar perigos de enchente em RioMafra.",
     type: "website",
   },
@@ -106,12 +106,12 @@ export default function RootLayout({
         </header>
 
         {/* Main Content */}
-        <main className="px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto py-4 sm:py-6">
+        <main className="px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto py-4 sm:py-6 pb-20 md:pb-6">
           {children}
         </main>
 
         {/* Footer */}
-        <footer className="border-t border-slate-200 bg-white mt-12 py-8">
+        <footer className="border-t border-slate-200 bg-white mt-12 py-8 pb-24 md:pb-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs text-slate-500 space-y-2">
             <p>
               Dados transmitidos por telemetria via Agência Nacional de Águas (ANA) e SNIRH.

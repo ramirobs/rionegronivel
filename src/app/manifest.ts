@@ -2,9 +2,9 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Nível Rio Negro — App para Monitorar Perigos de Enchente em RioMafra',
+    name: 'Nível Rio Negro',
     short_name: 'Nível Rio Negro',
-    description: 'App para monitorar perigos de enchente em RioMafra.',
+    description: 'Monitoramento e alerta de enchentes em Rio Negro (PR) e Mafra (SC).',
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',
