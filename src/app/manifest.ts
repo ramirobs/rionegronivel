@@ -2,9 +2,9 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Hidro Alert — Simulador de Enchentes Rio Negro e Mafra',
-    short_name: 'Hidro Alert',
-    description: 'Monitoramento em tempo real do nível do Rio Negro e previsão de cheias.',
+    name: 'Nível Rio Negro — App para Monitorar Perigos de Enchente em RioMafra',
+    short_name: 'Nível Rio Negro',
+    description: 'App para monitorar perigos de enchente em RioMafra.',
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',

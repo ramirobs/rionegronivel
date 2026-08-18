@@ -11,13 +11,14 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Hidro Alert — Simulador de Risco de Enchentes",
+  title: "Nível Rio Negro — Monitoramento e Alerta de Enchentes em RioMafra",
   description:
-    "Monitoramento em tempo real do nível do Rio Negro e previsão de risco de enchentes para Rio Negro (PR) e Mafra (SC).",
+    "App para monitorar perigos de enchente em RioMafra. Acompanhe o nível do Rio Negro em tempo real com dados da telemetria e alertas para Rio Negro (PR) e Mafra (SC).",
   keywords: [
     "enchente",
     "Rio Negro",
     "Mafra",
+    "RioMafra",
     "nível do rio",
     "telemetria",
     "ANA",
@@ -28,11 +29,11 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Hidro Alert",
+    title: "Nível Rio Negro",
   },
   openGraph: {
-    title: "Hidro Alert — Rio Negro / Mafra",
-    description: "Monitoramento em tempo real e previsão de risco de enchentes.",
+    title: "Nível Rio Negro — RioMafra",
+    description: "App para monitorar perigos de enchente em RioMafra.",
     type: "website",
   },
 };
@@ -86,14 +87,14 @@ export default function RootLayout({
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-                    Hidro Alert
+                    Nível Rio Negro
                   </h1>
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
                     AO VIVO
                   </span>
                 </div>
                 <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
-                  Monitoramento Rio Negro (PR) — Mafra (SC)
+                  App para monitorar perigos de enchente em RioMafra
                 </p>
               </div>
             </div>
@@ -116,7 +117,7 @@ export default function RootLayout({
               Dados transmitidos por telemetria via Agência Nacional de Águas (ANA) e SNIRH.
             </p>
             <p className="text-[11px] text-slate-400">
-              Hidro Alert • Simulador e Monitor de Cheias © 2026
+              Nível Rio Negro • App para monitorar perigos de enchente em RioMafra © 2026
             </p>
           </div>
         </footer>

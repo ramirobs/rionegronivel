@@ -1,5 +1,6 @@
 {
-  "name": "hidro-simulator",
+  "name": "nivel-rio-negro",
+  "description": "App para monitorar perigos de enchente em RioMafra",
   "version": "0.1.0",
   "private": true,
   "scripts": {

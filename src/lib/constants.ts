@@ -1,5 +1,5 @@
 // ============================================================
-// Hidro Alert — Constantes e Configuração
+// Nível Rio Negro — Constantes e Configuração
 // ============================================================
 
 // ----- Estações da Bacia do Rio Negro -----

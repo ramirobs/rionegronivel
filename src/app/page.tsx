@@ -11,8 +11,13 @@ import RiverLevelChart from '@/components/dashboard/river-level-chart';
 import PrecipitationChart from '@/components/dashboard/precipitation-chart';
 import ReturnPeriod from '@/components/dashboard/return-period';
 import EmergencyContacts from '@/components/dashboard/emergency-contacts';
+import ForecastTrendChart from '@/components/dashboard/forecast-trend-chart';
+import ForecastDailyCards from '@/components/dashboard/forecast-daily-cards';
 import { classifyRisk } from '@/lib/statistics';
 import type { RiskLevel } from '@/lib/constants';
+import type { WeatherForecastResponse } from '@/lib/weather-api';
+import type { HydrologicalProjectionResult } from '@/lib/hydrological-forecast';
+import type { CombinedChartPoint } from '@/app/api/weather-forecast/route';
 
 interface RiverDataPoint {
   date: string;
@@ -54,10 +59,20 @@ interface StatsResponse {
   gumbelParams: { location: number; scale: number };
 }
 
+interface ForecastApiResponse {
+  success: boolean;
+  weather: WeatherForecastResponse;
+  projection: HydrologicalProjectionResult;
+  chartData: CombinedChartPoint[];
+  currentLevel: number;
+  lastUpdated: string;
+}
+
 export default function DashboardPage() {
   const [riverData, setRiverData] = useState<RiverResponse | null>(null);
   const [precipData, setPrecipData] = useState<PrecipResponse | null>(null);
   const [statsData, setStatsData] = useState<StatsResponse | null>(null);
+  const [forecastData, setForecastData] = useState<ForecastApiResponse | null>(null);
   const [period, setPeriod] = useState('7');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -66,10 +81,11 @@ export default function DashboardPage() {
   const fetchData = useCallback(async () => {
     try {
       setRefreshing(true);
-      const [riverRes, precipRes, statsRes] = await Promise.allSettled([
+      const [riverRes, precipRes, statsRes, forecastRes] = await Promise.allSettled([
         fetch(`/api/river-data?days=${period}`),
         fetch('/api/precipitation'),
         fetch('/api/statistics'),
+        fetch('/api/weather-forecast'),
       ]);
 
       if (riverRes.status === 'fulfilled' && riverRes.value.ok) {
@@ -80,6 +96,9 @@ export default function DashboardPage() {
       }
       if (statsRes.status === 'fulfilled' && statsRes.value.ok) {
         setStatsData(await statsRes.value.json());
+      }
+      if (forecastRes.status === 'fulfilled' && forecastRes.value.ok) {
+        setForecastData(await forecastRes.value.json());
       }
 
       setLastFetch(new Date().toISOString());
@@ -97,7 +116,7 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  const currentLevel = riverData?.latest?.level ?? 0;
+  const currentLevel = riverData?.latest?.level ?? forecastData?.currentLevel ?? 0;
   const trend = riverData?.trend ?? { rate: 0, direction: 'stable' as const };
   const riskLevel: RiskLevel = classifyRisk(currentLevel);
 
@@ -142,7 +161,7 @@ export default function DashboardPage() {
           <div className="w-12 h-12 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <h3 className="text-base font-bold text-slate-900">Carregando Telemetria...</h3>
           <p className="text-xs text-slate-500 mt-1 font-medium">
-            Consultando estações da ANA e SNIRH
+            Consultando estações da ANA, SNIRH e Open-Meteo
           </p>
         </div>
       </div>
@@ -151,7 +170,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* 1. Diagnóstico Amigável em Português Claro (O mais importante primeiro!) */}
+      {/* 1. Diagnóstico Amigável em Português Claro */}
       <FriendlySummary
         level={currentLevel}
         trend={trend}
@@ -176,13 +195,27 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 3. Simulador Interativo: "E se chover mais?" */}
+      {/* 3. NOVO: Previsão Meteorológica e Gráfico de Tendência Futura (Próximos 7 dias) */}
+      {forecastData && forecastData.success && (
+        <div className="space-y-4 sm:space-y-6">
+          <ForecastTrendChart
+            data={forecastData.chartData}
+            projection={forecastData.projection}
+          />
+          <ForecastDailyCards
+            weather={forecastData.weather}
+            projection={forecastData.projection}
+          />
+        </div>
+      )}
+
+      {/* 4. Simulador Interativo: "E se chover mais?" */}
       <InteractiveSimulator currentLevel={currentLevel} />
 
-      {/* 4. Régua Prática de Inundação: O que acontece na cidade? */}
+      {/* 5. Régua Prática de Inundação: O que acontece na cidade? */}
       <FloodRuler currentLevel={currentLevel} />
 
-      {/* 5. Cartões de Resumo Rápido */}
+      {/* 6. Cartões de Resumo Rápido */}
       <StatsCards
         currentLevel={currentLevel}
         maxHistorical={maxHistorical}
@@ -192,7 +225,7 @@ export default function DashboardPage() {
         daysSinceFlood={floodDays}
       />
 
-      {/* 6. Gráficos Visuais do Histórico e Chuvas */}
+      {/* 7. Gráficos Visuais do Histórico e Chuvas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Gráfico do Nível do Rio */}
         <div className="flex flex-col">
@@ -233,13 +266,13 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 7. Probabilidade Histórica de Enchentes (Explicada de Forma Simples) */}
+      {/* 8. Probabilidade Histórica de Enchentes (Gumbel & TR) */}
       <ReturnPeriod
         table={statsData?.returnPeriodTable ?? []}
         annualMaxima={statsData?.annualMaxima ?? []}
       />
 
-      {/* 8. Telefones e Contatos de Emergência */}
+      {/* 9. Telefones e Contatos de Emergência */}
       <EmergencyContacts />
     </div>
   );
