@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sparkles, CloudRain, AlertTriangle, ShieldCheck, ArrowRight, RotateCcw } from 'lucide-react';
 
 interface InteractiveSimulatorProps {
   currentLevel: number;
+  onSimulate?: (simulatedLevel: number | null) => void;
 }
 
-export default function InteractiveSimulator({ currentLevel }: InteractiveSimulatorProps) {
+export default function InteractiveSimulator({ currentLevel, onSimulate }: InteractiveSimulatorProps) {
   const [rainScenario, setRainScenario] = useState<number>(0); // mm adicionais de chuva
   const [extraLevel, setExtraLevel] = useState<number>(0); // metros adicionais de elevação manual
 
@@ -15,6 +16,17 @@ export default function InteractiveSimulator({ currentLevel }: InteractiveSimula
   // Cada ~25mm de chuva acumulada na bacia eleva o rio em cerca de ~0.8m a 1.2m
   const estimatedRiseFromRain = (rainScenario / 25) * 0.9;
   const simulatedLevel = Number((currentLevel + estimatedRiseFromRain + extraLevel).toFixed(2));
+
+  // Avisa o componente pai quando a simulação está ativa ou resetada
+  useEffect(() => {
+    if (onSimulate) {
+      if (rainScenario > 0 || extraLevel > 0) {
+        onSimulate(simulatedLevel);
+      } else {
+        onSimulate(null);
+      }
+    }
+  }, [simulatedLevel, rainScenario, extraLevel, onSimulate]);
 
   // Diagnóstico do cenário simulado
   const getSimulatedStatus = (lvl: number) => {

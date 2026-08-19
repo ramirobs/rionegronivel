@@ -74,6 +74,7 @@ interface ForecastApiResponse {
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<TabId>('live');
+  const [activeSimulatedLevel, setActiveSimulatedLevel] = useState<number | null>(null);
   const [riverData, setRiverData] = useState<RiverResponse | null>(null);
   const [precipData, setPrecipData] = useState<PrecipResponse | null>(null);
   const [statsData, setStatsData] = useState<StatsResponse | null>(null);
@@ -368,14 +369,17 @@ export default function DashboardPage() {
           </div>
 
           {/* Simulador Interativo */}
-          <InteractiveSimulator currentLevel={currentLevel} />
+          <InteractiveSimulator 
+            currentLevel={currentLevel} 
+            onSimulate={setActiveSimulatedLevel}
+          />
 
           {/* Régua de apoio para consulta durante a simulação */}
           <div className="mt-4">
             <h3 className="text-sm font-bold text-slate-700 mb-2 px-1">
               Cotas Críticas de Referência em RioMafra
             </h3>
-            <FloodRuler currentLevel={currentLevel} />
+            <FloodRuler currentLevel={activeSimulatedLevel ?? currentLevel} />
           </div>
         </div>
       )}

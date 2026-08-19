@@ -93,9 +93,12 @@ export async function GET(request: Request) {
 
     let cleanData = cleanRiverData(rawData);
 
-    // Se a ANA não retornar dados suficientes, recorre ao gerador de simulação
+    // Se a ANA não retornar dados (muito comum), não vamos mais gerar dados falsos oscilantes,
+    // pois isso confunde o usuário que acha que o rio está subindo ou que é bug.
+    // Vamos apenas retornar os dados limpos ou vazios, e o front-end usará a previsão do tempo.
     if (cleanData.length === 0) {
-      cleanData = generateMockRiverData(days);
+      // Deixamos vazio. O front-end usa `forecastData?.currentLevel` de fallback
+      // de forma transparente sem simular ruídos no tempo real.
     }
 
     const latest = getLatestReading(cleanData) || cleanData[cleanData.length - 1];
