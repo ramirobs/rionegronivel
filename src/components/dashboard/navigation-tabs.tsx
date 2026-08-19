@@ -5,13 +5,12 @@ import {
   Activity,
   Map,
   CloudRain,
-  SlidersHorizontal,
   BarChart3,
   ShieldAlert,
 } from 'lucide-react';
 import type { RiskLevel } from '@/lib/constants';
 
-export type TabId = 'live' | 'forecast' | 'simulator' | 'history' | 'emergency';
+export type TabId = 'live' | 'forecast' | 'history' | 'emergency';
 
 interface NavigationTabsProps {
   activeTab: TabId;
@@ -47,12 +46,6 @@ export default function NavigationTabs({
       label: 'Previsão 7 Dias',
       shortLabel: 'Previsão',
       icon: CloudRain,
-    },
-    {
-      id: 'simulator',
-      label: 'Simulador',
-      shortLabel: 'Simulador',
-      icon: SlidersHorizontal,
     },
     {
       id: 'history',

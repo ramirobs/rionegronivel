@@ -6,7 +6,6 @@ import HeroSection from '@/components/dashboard/hero-section';
 import RiskGauge from '@/components/dashboard/risk-gauge';
 import FriendlySummary from '@/components/dashboard/friendly-summary';
 import FloodRuler from '@/components/dashboard/flood-ruler';
-import InteractiveSimulator from '@/components/dashboard/interactive-simulator';
 import StatsCards from '@/components/dashboard/stats-cards';
 import RiverLevelChart from '@/components/dashboard/river-level-chart';
 import PrecipitationChart from '@/components/dashboard/precipitation-chart';
@@ -20,7 +19,7 @@ import type { RiskLevel } from '@/lib/constants';
 import type { WeatherForecastResponse } from '@/lib/weather-api';
 import type { HydrologicalProjectionResult } from '@/lib/hydrological-forecast';
 import type { CombinedChartPoint } from '@/app/api/weather-forecast/route';
-import { CloudRain, SlidersHorizontal, BarChart3, ShieldAlert, Sparkles } from 'lucide-react';
+import { CloudRain, BarChart3, ShieldAlert, Sparkles } from 'lucide-react';
 
 interface RiverDataPoint {
   date: string;
@@ -73,7 +72,6 @@ interface ForecastApiResponse {
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<TabId>('live');
-  const [activeSimulatedLevel, setActiveSimulatedLevel] = useState<number | null>(null);
   const [riverData, setRiverData] = useState<RiverResponse | null>(null);
   const [precipData, setPrecipData] = useState<PrecipResponse | null>(null);
   const [statsData, setStatsData] = useState<StatsResponse | null>(null);
@@ -321,42 +319,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* ABA 3: SIMULADOR INTERATIVO                                              */}
-      {/* ========================================================================= */}
-      {activeTab === 'simulator' && (
-        <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-200">
-          <div className="bg-gradient-to-r from-indigo-700 via-purple-600 to-blue-600 rounded-2xl p-4 sm:p-6 text-white shadow-md">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-white/20 backdrop-blur-md rounded-xl">
-                <SlidersHorizontal className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h2 className="text-base sm:text-lg font-bold">
-                  Simulador Interativo de Enchentes
-                </h2>
-                <p className="text-xs sm:text-sm text-purple-100 mt-0.5">
-                  Arraste a quantidade de chuva esperada para prever o nível que o Rio Negro pode atingir e quais áreas seriam impactadas.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Simulador Interativo */}
-          <InteractiveSimulator 
-            currentLevel={currentLevel} 
-            onSimulate={setActiveSimulatedLevel}
-          />
-
-          {/* Régua de apoio para consulta durante a simulação */}
-          <div className="mt-4">
-            <h3 className="text-sm font-bold text-slate-700 mb-2 px-1">
-              Cotas Críticas de Referência em RioMafra
-            </h3>
-            <FloodRuler currentLevel={activeSimulatedLevel ?? currentLevel} />
-          </div>
-        </div>
-      )}
 
       {/* ========================================================================= */}
       {/* ABA 4: HISTÓRICO & DADOS ESTATÍSTICOS                                     */}
