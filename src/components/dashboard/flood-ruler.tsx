@@ -84,9 +84,9 @@ export default function FloodRuler({ currentLevel, trend }: FloodRulerProps) {
   const TrendIcon = isRising ? TrendingUp : isFalling ? TrendingDown : Minus;
 
   const trendLabel = isRising
-    ? `Subindo ${trend.rate > 0 ? `(+${trend.rate.toFixed(1)} cm/h)` : ''}`
+    ? `Subindo (+${(Math.abs(trend.rate) * 100).toFixed(1)} cm/h)`
     : isFalling
-    ? `Descendo ${trend.rate > 0 ? `(-${trend.rate.toFixed(1)} cm/h)` : ''}`
+    ? `Descendo (-${(Math.abs(trend.rate) * 100).toFixed(1)} cm/h)`
     : 'Nível Estável';
 
   const trendHeaderBadge = isRising

@@ -65,10 +65,10 @@ export async function GET(request: Request) {
         type: 'alert',
         tag: 'flood-warning-alert',
       };
-    } else if (trend && trend.direction === 'rising' && trendRate >= 10) {
+    } else if (trend && trend.direction === 'rising' && (trendRate * 100) >= 10) {
       alertPayload = {
         title: '⚡ SUBIDA RÁPIDA DO RIO NEGRO',
-        body: `O nível está subindo a +${trendRate.toFixed(1)} cm/h (cota atual: ${currentLevel.toFixed(2)} m).`,
+        body: `O nível está subindo a +${(trendRate * 100).toFixed(1)} cm/h (cota atual: ${currentLevel.toFixed(2)} m).`,
         level: currentLevel,
         type: 'fast_rise',
         tag: 'flood-fast-rise-alert',

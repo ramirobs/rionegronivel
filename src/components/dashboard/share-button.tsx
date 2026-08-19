@@ -39,8 +39,8 @@ export default function ShareButton({
   };
 
   const getTrendText = () => {
-    if (trend.direction === 'rising') return `Subindo (+${Math.abs(trend.rate).toFixed(1)} cm/h) ↗️`;
-    if (trend.direction === 'falling') return `Baixando (-${Math.abs(trend.rate).toFixed(1)} cm/h) ↘️`;
+    if (trend.direction === 'rising') return `Subindo (+${(Math.abs(trend.rate) * 100).toFixed(1)} cm/h) ↗️`;
+    if (trend.direction === 'falling') return `Baixando (-${(Math.abs(trend.rate) * 100).toFixed(1)} cm/h) ↘️`;
     return 'Estável ➡️';
   };
 

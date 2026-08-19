@@ -169,7 +169,7 @@ export default function HeroSection({
                 {trend.direction === 'falling' && <ArrowDown className="h-3.5 w-3.5 stroke-[2.5]" />}
                 {trend.direction === 'stable' && <Minus className="h-3.5 w-3.5 stroke-[2.5]" />}
                 <span>
-                  {trend.direction === 'stable' ? 'Estável' : `${Math.abs(trend.rate).toFixed(2)} cm/h`}
+                  {trend.direction === 'stable' ? 'Estável' : `${(Math.abs(trend.rate) * 100).toFixed(1)} cm/h`}
                 </span>
               </div>
             </div>
