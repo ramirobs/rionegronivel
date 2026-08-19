@@ -79,27 +79,31 @@ export async function GET(request: Request) {
     let rawData: RiverDataPoint[] = [];
 
     try {
-      if (days <= 14) {
-        // Dados telemétricos de alta frequência para períodos recentes
-        rawData = await fetchTelemetricData(PRIMARY_STATION.code, startStr, endStr);
-      } else {
-        // Série histórica para intervalos maiores
-        rawData = await fetchHistoricalData(PRIMARY_STATION.code, '1', startStr, endStr);
+      // Tenta sempre a telemétrica primeiro (funciona bem para dados recentes)
+      rawData = await fetchTelemetricData(PRIMARY_STATION.code, startStr, endStr);
+
+      // Se telemétrica retornou pouco ou nada para períodos longos, tenta a série histórica
+      if (rawData.length < 5 && days > 14) {
+        const historicalData = await fetchHistoricalData(PRIMARY_STATION.code, '1', startStr, endStr);
+        if (historicalData.length > rawData.length) {
+          rawData = historicalData;
+        }
       }
     } catch (fetchErr) {
-      console.warn('[API river-data] Falha na consulta à ANA, usando fallback:', fetchErr);
-      rawData = [];
+      console.warn('[API river-data] Falha na consulta à ANA:', fetchErr);
+      // Tenta o outro endpoint como fallback
+      try {
+        if (rawData.length === 0) {
+          rawData = days <= 14
+            ? await fetchHistoricalData(PRIMARY_STATION.code, '1', startStr, endStr)
+            : await fetchTelemetricData(PRIMARY_STATION.code, startStr, endStr);
+        }
+      } catch {
+        rawData = [];
+      }
     }
 
-    let cleanData = cleanRiverData(rawData);
-
-    // Se a ANA não retornar dados (muito comum), não vamos mais gerar dados falsos oscilantes,
-    // pois isso confunde o usuário que acha que o rio está subindo ou que é bug.
-    // Vamos apenas retornar os dados limpos ou vazios, e o front-end usará a previsão do tempo.
-    if (cleanData.length === 0) {
-      // Deixamos vazio. O front-end usa `forecastData?.currentLevel` de fallback
-      // de forma transparente sem simular ruídos no tempo real.
-    }
+    const cleanData = cleanRiverData(rawData);
 
     const latest = getLatestReading(cleanData) || cleanData[cleanData.length - 1];
     const trendResult = calculateTrend(cleanData);
