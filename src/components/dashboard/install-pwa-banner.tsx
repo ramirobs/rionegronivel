@@ -141,7 +141,7 @@ export default function InstallPWABanner() {
       {/* Modal com Instruções para iOS (Safari) / Outros */}
       {showIOSModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-200 relative animate-in zoom-in-95 duration-150 text-slate-900">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-200 relative animate-in zoom-in-95 duration-150 text-slate-900 max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setShowIOSModal(false)}
               className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
