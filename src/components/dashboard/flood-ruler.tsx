@@ -8,12 +8,12 @@ interface FloodRulerProps {
 }
 
 export default function FloodRuler({ currentLevel, trend }: FloodRulerProps) {
-  // Array ordenado do maior para o menor nível. Assim a água preenche de baixo para cima.
+  // Ordem invertida: 11.2 no topo, 4.0 na base. A água preenche de baixo para cima.
   const stages = [
     {
       level: 11.2,
       label: '11,20 m',
-      name: 'Cheia Histórica (2023)',
+      name: 'Cheia Histórica',
       status: 'Histórico',
       desc: 'Maior cheia em 30 anos. Cidades submersas.',
       colorHex: '#9333ea', // purple-600
@@ -72,8 +72,7 @@ export default function FloodRuler({ currentLevel, trend }: FloodRulerProps) {
     },
   ];
 
-  // Encontrar o estágio mais próximo atingido (primeiro estágio com level <= currentLevel)
-  // Ou se for abaixo de 4m, usaremos o de 4m como base.
+  // Identificar o estágio atual mais próximo (primeiro estágio com level <= currentLevel)
   let currentStageIdx = stages.findIndex((stage) => currentLevel >= stage.level);
   if (currentStageIdx === -1) {
     currentStageIdx = stages.length - 1; // Fica no 4.0m se estiver muito baixo
@@ -82,7 +81,6 @@ export default function FloodRuler({ currentLevel, trend }: FloodRulerProps) {
   // Status de tendência
   const isRising = trend?.direction === 'rising';
   const isFalling = trend?.direction === 'falling';
-
   const TrendIcon = isRising ? TrendingUp : isFalling ? TrendingDown : Minus;
 
   const trendLabel = isRising
@@ -98,9 +96,9 @@ export default function FloodRuler({ currentLevel, trend }: FloodRulerProps) {
     : 'text-slate-600 bg-slate-50 border-slate-200';
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-6 shadow-xs">
+    <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-6 shadow-xs overflow-hidden">
       {/* Cabeçalho */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8 relative z-20 bg-white">
         <div>
           <h3 className="text-base font-bold text-slate-900">
             Régua Prática: O que acontece na cidade?
@@ -111,9 +109,7 @@ export default function FloodRuler({ currentLevel, trend }: FloodRulerProps) {
         </div>
 
         {trend && (
-          <div
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${trendHeaderBadge}`}
-          >
+          <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${trendHeaderBadge}`}>
             <TrendIcon className="h-4 w-4" />
             <span>{trendLabel}</span>
           </div>
@@ -121,121 +117,115 @@ export default function FloodRuler({ currentLevel, trend }: FloodRulerProps) {
       </div>
 
       {/* Lista da Régua */}
-      <div className="flex flex-col relative pb-4">
+      <div className="flex flex-col relative">
         {stages.map((stage, idx) => {
           const isReached = currentLevel >= stage.level;
           const isCurrentNearest = idx === currentStageIdx;
-          const isFirst = idx === 0; // Topo (11.2m)
-          const isLast = idx === stages.length - 1; // Base (4.0m)
+          const isLast = idx === stages.length - 1; // 4.0m (Base)
 
-          // O segmento visual conecta `stage` (topo do segmento) até `nextStage` (base do segmento).
-          // Como desenhamos de cima para baixo na tela, `nextStage` é o item `idx + 1` (que tem level menor).
-          const nextStageLevel = !isLast ? stages[idx + 1].level : stage.level - 1; // se for o último, dá uma margem fictícia pra baixo.
-          
+          // Nível base deste segmento (o nível do próximo card para baixo)
+          const nextStageLevel = !isLast ? stages[idx + 1].level : 3.0; // Fictício abaixo de 4m
           const topLevel = stage.level;
           const bottomLevel = nextStageLevel;
           const range = topLevel - bottomLevel;
 
-          let segmentPercent = 0; // % preenchido de baixo para cima
-          if (!isLast) {
-            if (currentLevel >= topLevel) {
-              segmentPercent = 100; // Totalmente submerso
-            } else if (currentLevel > bottomLevel) {
-              // Parcialmente submerso
-              segmentPercent = ((currentLevel - bottomLevel) / range) * 100;
-            }
-          } else {
-             // O último trecho (abaixo de 4m)
-             if (currentLevel >= 4.0) {
-                 segmentPercent = 100;
-             } else {
-                 // Abaixo de 4m, proporcional entre 3 e 4
-                 const l = Math.max(currentLevel, 3);
-                 segmentPercent = ((l - 3) / 1) * 100;
-             }
+          // % de água preenchida neste segmento (de baixo para cima)
+          let segmentPercent = 0;
+          if (currentLevel >= topLevel) {
+            segmentPercent = 100; // Submerso
+          } else if (currentLevel > bottomLevel) {
+            segmentPercent = ((currentLevel - bottomLevel) / range) * 100; // Parcial
           }
 
-          // Posicionamento do marcador de "Nível Atual" neste trecho (se a água estiver passando por aqui)
+          // Posicionar o marcador "Você está aqui" neste segmento?
           const showMarkerHere = (currentLevel > bottomLevel && currentLevel <= topLevel && !isLast) || (isLast && currentLevel <= topLevel);
 
           return (
-            <div key={idx} className="relative flex items-stretch">
+            <div key={idx} className="relative flex items-stretch mb-6 last:mb-0">
               
-              {/* Coluna da Régua (Marcadores e Linha de Água) */}
-              <div className="relative flex flex-col items-center shrink-0 w-12 self-stretch">
-                
-                {/* O Ponto deste nível */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 flex flex-col items-center z-10 w-full h-8 justify-center">
-                    <div
-                        style={{
-                            backgroundColor: isReached ? stage.colorHex : '#cbd5e1',
-                            borderColor: isReached ? '#fff' : '#f8fafc',
-                        }}
-                        className={`w-3.5 h-3.5 rounded-full border-[2px] shadow-sm transition-all duration-300 z-10
-                            ${isCurrentNearest ? 'scale-125 ring-4 ring-blue-500/25' : 'scale-100'}
-                        `}
-                    />
-                </div>
-
-                {/* A Linha/Tubo conectando este ponto ao de baixo */}
+              {/* Coluna Esquerda: Ponto e Linha conectora */}
+              <div className="relative w-10 shrink-0">
+                {/* 
+                  A Linha/Tubo conectando este ponto ao ponto de baixo.
+                  Como a margem inferior do item é 24px (mb-6) e o ponto está no top: 24px,
+                  a linha deve descer 48px além do bottom deste container para encostar no próximo ponto.
+                */}
                 {!isLast && (
-                  <div className="w-2.5 flex-1 relative bg-slate-100 rounded-full my-4 shadow-inner overflow-visible">
-                      {/* Água (preenchendo de baixo para cima, absolute bottom-0) */}
-                      {segmentPercent > 0 && (
-                          <div 
-                              className="absolute bottom-0 left-0 w-full bg-blue-500 transition-all duration-700 ease-out rounded-full shadow-[0_0_8px_rgba(59,130,246,0.6)]"
-                              style={{ height: `${segmentPercent}%` }}
-                          >
-                             {/* Efeito de listras sutis na água */}
-                             <div className="absolute inset-0 opacity-20" style={{
-                                 backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.5) 4px, rgba(255,255,255,0.5) 8px)'
-                             }} />
-                          </div>
-                      )}
+                  <div 
+                    className="absolute w-2.5 left-1/2 -translate-x-1/2 bg-slate-100 rounded-full shadow-inner z-0 overflow-hidden"
+                    style={{ top: '24px', bottom: '-48px' }} 
+                  >
+                    {/* Água (preenchendo de baixo para cima) */}
+                    {segmentPercent > 0 && (
+                      <div 
+                        className="absolute bottom-0 left-0 w-full bg-blue-500 transition-all duration-700 ease-out shadow-[0_0_8px_rgba(59,130,246,0.6)]"
+                        style={{ height: `${segmentPercent}%` }}
+                      >
+                         {/* Efeito visual na água */}
+                         <div className="absolute inset-0 opacity-20" style={{
+                             backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.5) 4px, rgba(255,255,255,0.5) 8px)'
+                         }} />
+                      </div>
+                    )}
 
-                      {/* Marcador do Nível Atual flutuando na superfície da água */}
-                      {showMarkerHere && (
-                          <div 
-                             className="absolute w-full z-30 transition-all duration-700"
-                             style={{ bottom: `${segmentPercent}%` }}
-                          >
-                              {/* O indicador flutuante */}
-                              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white shadow-lg border-2 border-blue-600 flex items-center justify-center">
-                                 {isRising && <TrendingUp className="w-3.5 h-3.5 text-blue-600" />}
-                                 {isFalling && <TrendingDown className="w-3.5 h-3.5 text-blue-600" />}
-                                 {!isRising && !isFalling && <div className="w-2 h-2 bg-blue-600 rounded-full" />}
-                              </div>
-
-                              {/* Dica da bolha (tool-tipzinha) colada no marcador */}
-                              <div className="absolute top-1/2 left-4 -translate-y-1/2 ml-3 bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow whitespace-nowrap hidden sm:block">
-                                  {currentLevel.toFixed(2)}m
-                              </div>
+                    {/* Marcador flutuante no nível exato da água neste tubo */}
+                    {showMarkerHere && (
+                      <div 
+                         className="absolute w-full z-30 transition-all duration-700"
+                         style={{ bottom: `${segmentPercent}%` }}
+                      >
+                          {/* Ícone flutuante centralizado na linha da água */}
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white shadow-md border-[2.5px] border-blue-600 flex items-center justify-center animate-pulse">
+                             {isRising && <TrendingUp className="w-3.5 h-3.5 text-blue-600" />}
+                             {isFalling && <TrendingDown className="w-3.5 h-3.5 text-blue-600" />}
+                             {!isRising && !isFalling && <div className="w-2 h-2 bg-blue-600 rounded-full" />}
                           </div>
-                      )}
+
+                          {/* Tooltip ao lado do marcador */}
+                          <div className="absolute top-1/2 left-5 -translate-y-1/2 ml-1 bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow whitespace-nowrap">
+                              {currentLevel.toFixed(2)}m
+                          </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
+                {/* O Ponto Fixo do Estágio */}
+                <div 
+                  className="absolute left-1/2 -translate-x-1/2 z-10 flex items-center justify-center"
+                  style={{ top: '24px', marginTop: '-8px' }} // Centro do ponto em Y = 24px
+                >
+                  <div
+                    style={{
+                      backgroundColor: isReached ? stage.colorHex : '#cbd5e1',
+                      borderColor: isReached ? '#fff' : '#f8fafc',
+                    }}
+                    className={`w-4 h-4 rounded-full border-[3px] shadow-sm transition-all duration-300
+                      ${isCurrentNearest ? 'scale-[1.3] ring-4 ring-blue-500/30' : 'scale-100'}
+                    `}
+                  />
+                </div>
               </div>
 
-              {/* Card de Informação à direita */}
+              {/* Coluna Direita: Cartão de Informações */}
               <div
-                className={`flex-1 ml-2 sm:ml-4 mb-6 p-4 rounded-xl border transition-all duration-300 relative
-                  ${isReached ? 'bg-slate-50/50 border-slate-200' : 'bg-white border-slate-100 opacity-60'}
+                className={`flex-1 ml-2 p-4 rounded-xl border transition-all duration-300 relative z-10
+                  ${isReached ? 'bg-slate-50/80 border-slate-200' : 'bg-white border-slate-100 opacity-60'}
                   ${isCurrentNearest ? 'ring-2 ring-blue-500/20 shadow-md bg-white border-blue-200' : ''}
                 `}
               >
+                {/* Badge "VOCÊ ESTÁ AQUI" no card mais próximo */}
                 {isCurrentNearest && (
-                    <div className="absolute -top-3 right-4 bg-blue-600 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow animate-pulse">
-                        VOCÊ ESTÁ AQUI
-                    </div>
+                  <div className="absolute -top-2.5 right-4 bg-blue-600 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm">
+                    ATUAL
+                  </div>
                 )}
 
-                <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                {/* Header do card (Alinhado com o top: 24px do container -> center of text ~24px) */}
+                <div className="flex flex-wrap items-center gap-2 mb-2">
                   <span className="text-sm font-black text-slate-800">{stage.label}</span>
                   <span className="text-sm font-bold text-slate-700">{stage.name}</span>
-                  <span
-                    className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md border ${stage.badgeColor}`}
-                  >
+                  <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md border ${stage.badgeColor}`}>
                     {stage.status}
                   </span>
                 </div>
@@ -244,14 +234,14 @@ export default function FloodRuler({ currentLevel, trend }: FloodRulerProps) {
                   {stage.desc}
                 </p>
 
-                {/* Impacto detalhado quando atingido */}
+                {/* Impacto Imediato */}
                 {isCurrentNearest && (
-                   <div className="mt-3 pt-3 border-t border-slate-200 flex gap-2">
-                       <span className="text-blue-500 mt-0.5">⚡</span>
-                       <p className="text-xs text-slate-700 leading-relaxed">
-                           <strong className="font-semibold">Impacto Imediato:</strong> {stage.impact}
-                       </p>
-                   </div>
+                  <div className="mt-3 pt-3 border-t border-slate-200 flex gap-2">
+                    <span className="text-blue-500 mt-0.5">⚡</span>
+                    <p className="text-xs text-slate-700 leading-relaxed">
+                      <strong className="font-semibold">O que esperar:</strong> {stage.impact}
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
