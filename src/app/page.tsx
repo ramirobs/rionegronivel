@@ -252,7 +252,7 @@ export default function DashboardPage() {
           </div>
 
           {/* 3. Régua Prática de Inundação: O que acontece na cidade? */}
-          <FloodRuler currentLevel={currentLevel} />
+          <FloodRuler currentLevel={currentLevel} trend={trend} />
 
           {/* 4. Cartões de Resumo Rápido */}
           <StatsCards
