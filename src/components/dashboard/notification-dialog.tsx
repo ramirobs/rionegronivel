@@ -399,8 +399,17 @@ export default function NotificationDialog({
                   {isSubscribing ? 'Conectando ao Servidor...' : '🔔 Permitir e Ativar Alertas no Celular'}
                 </button>
                 {subError && (
-                  <div className="mt-2 text-xs text-red-200 font-bold bg-red-900/30 p-2 rounded-lg border border-red-500/30">
-                    ⚠️ {subError}
+                  <div className="mt-2 text-xs font-bold bg-red-900/30 p-3 rounded-xl border border-red-500/30 text-white space-y-2">
+                    <p className="text-red-200">⚠️ {subError}</p>
+                    {subError.includes('bloqueadas') && (
+                      <div className="text-[11px] text-red-100 font-medium bg-black/20 p-2 rounded-lg">
+                        <strong className="block mb-1 text-white">Como resolver no Android:</strong>
+                        1. Toque no ícone de <strong className="text-white">Cadeado 🔒</strong> ou Configurações na barra de endereços lá em cima.<br/>
+                        2. Vá em <strong className="text-white">Permissões</strong>.<br/>
+                        3. Escolha <strong className="text-white">Notificações</strong> e marque <strong className="text-emerald-400">Permitir</strong>.<br/>
+                        4. Recarregue a página e tente novamente.
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
