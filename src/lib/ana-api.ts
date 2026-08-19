@@ -169,13 +169,17 @@ function normalizeLevelToMeters(rawLevel: number | string | null | undefined): n
   const num = typeof rawLevel === 'string' ? parseFloat(rawLevel) : rawLevel;
   if (isNaN(num)) return 0;
   
-  if (num === 8888 || num === 9999 || num >= 5000) return 0;
+  if (num === 8888 || num === 9999) return 0;
   if (num <= 0) return 0;
   
+  let meters = num;
   if (num > 30) {
-    return Number((num / 100).toFixed(3));
+    meters = num / 100;
   }
-  return Number(num.toFixed(3));
+  
+  if (meters > 15) return 0;
+  
+  return Number(meters.toFixed(3));
 }
 
 function parseNumericValue(valueStr: string | number | null | undefined): number {
