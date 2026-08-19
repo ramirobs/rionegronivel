@@ -10,7 +10,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 export default function InstallPWABanner() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [showIOSModal, setShowIOSModal] = useState(false);
+  const [showModalType, setShowModalType] = useState<'ios' | 'android' | null>(null);
 
   const [isStandalone] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
@@ -24,6 +24,12 @@ export default function InstallPWABanner() {
     if (typeof window === 'undefined') return false;
     const userAgent = window.navigator.userAgent.toLowerCase();
     return /iphone|ipad|ipod/.test(userAgent);
+  });
+
+  const [isAndroid] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    return /android/.test(userAgent);
   });
 
   const [isDismissed, setIsDismissed] = useState<boolean>(() => {
@@ -54,7 +60,7 @@ export default function InstallPWABanner() {
 
   const handleInstallClick = async () => {
     if (isIOS) {
-      setShowIOSModal(true);
+      setShowModalType('ios');
       return;
     }
 
@@ -66,8 +72,8 @@ export default function InstallPWABanner() {
       }
       setDeferredPrompt(null);
     } else {
-      // Caso o navegador não suporte beforeinstallprompt diretamente (ex: Safari ou Firefox)
-      setShowIOSModal(true);
+      // Caso o navegador não tenha disparado beforeinstallprompt ou foi ignorado
+      setShowModalType(isAndroid ? 'android' : 'ios');
     }
   };
 
@@ -138,12 +144,12 @@ export default function InstallPWABanner() {
         </div>
       </div>
 
-      {/* Modal com Instruções para iOS (Safari) / Outros */}
-      {showIOSModal && (
+      {/* Modal com Instruções Fallback para Android / iOS */}
+      {showModalType && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="bg-white rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-200 relative animate-in zoom-in-95 duration-150 text-slate-900">
             <button
-              onClick={() => setShowIOSModal(false)}
+              onClick={() => setShowModalType(null)}
               className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
             >
               <X className="h-5 w-5" />
@@ -163,33 +169,61 @@ export default function InstallPWABanner() {
 
             {/* Passo a Passo Visual */}
             <div className="space-y-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs mb-5">
-              <div className="flex items-start gap-2.5">
-                <div className="p-1.5 rounded-lg bg-blue-100 text-blue-700 shrink-0">
-                  <Share className="h-4 w-4" />
-                </div>
-                <div>
-                  <strong className="font-bold text-slate-900">1. Toque em Compartilhar</strong>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    No iPhone, toque no botão de compartilhar (ícone na barra inferior do Safari).
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2.5 pt-2 border-t border-slate-200/60">
-                <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700 shrink-0">
-                  <PlusSquare className="h-4 w-4" />
-                </div>
-                <div>
-                  <strong className="font-bold text-slate-900">2. Adicionar à Tela de Início</strong>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Role a lista para baixo e toque na opção <strong>&quot;Adicionar à Tela de Início&quot;</strong>.
-                  </p>
-                </div>
-              </div>
+              {showModalType === 'ios' ? (
+                <>
+                  <div className="flex items-start gap-2.5">
+                    <div className="p-1.5 rounded-lg bg-blue-100 text-blue-700 shrink-0">
+                      <Share className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <strong className="font-bold text-slate-900">1. Toque em Compartilhar</strong>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        No iPhone, toque no botão de compartilhar (ícone na barra inferior do Safari).
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2.5 pt-2 border-t border-slate-200/60">
+                    <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700 shrink-0">
+                      <PlusSquare className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <strong className="font-bold text-slate-900">2. Adicionar à Tela de Início</strong>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Role a lista para baixo e toque na opção <strong>&quot;Adicionar à Tela de Início&quot;</strong>.
+                      </p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-start gap-2.5">
+                    <div className="p-1.5 rounded-lg bg-blue-100 text-blue-700 shrink-0 font-bold px-2.5">
+                      ⋮
+                    </div>
+                    <div>
+                      <strong className="font-bold text-slate-900">1. Abra o Menu do Navegador</strong>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Toque nos três pontinhos no canto superior direito da sua tela (geralmente no Chrome).
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2.5 pt-2 border-t border-slate-200/60">
+                    <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700 shrink-0">
+                      <PlusSquare className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <strong className="font-bold text-slate-900">2. Adicionar à Tela Inicial</strong>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Toque em <strong>&quot;Instalar aplicativo&quot;</strong> ou <strong>&quot;Adicionar à tela inicial&quot;</strong>.
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             <button
-              onClick={() => setShowIOSModal(false)}
+              onClick={() => setShowModalType(null)}
               type="button"
               className="w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-colors shadow-sm cursor-pointer"
             >
