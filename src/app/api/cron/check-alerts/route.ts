@@ -15,8 +15,16 @@ function formatAnaDate(date: Date): string {
   return `${day}/${month}/${year}`;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Proteção: aceita chamadas da Vercel Cron (header) OU de serviço externo (query param)
+    const isVercelCron = request.headers.get('Authorization') === `Bearer ${process.env.CRON_SECRET}`;
+    const url = new URL(request.url);
+    const isExternalCron = url.searchParams.get('key') === process.env.CRON_SECRET;
+
+    if (process.env.CRON_SECRET && !isVercelCron && !isExternalCron) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
     // 1. Busca leituras mais recentes da telemetria da ANA
     const endDate = new Date();
     const startDate = new Date(endDate.getTime() - 2 * 24 * 60 * 60 * 1000); // Últimos 2 dias
