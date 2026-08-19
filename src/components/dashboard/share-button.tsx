@@ -44,7 +44,7 @@ export default function ShareButton({
     return 'Estável ➡️';
   };
 
-  const getShareText = () => {
+  const getShareText = (includeUrl = true) => {
     const formattedDate = (() => {
       try {
         const d = new Date(lastUpdate);
@@ -69,20 +69,19 @@ export default function ShareButton({
       `📈 *Tendência:* ${getTrendText()}\n` +
       `🌧️ *Chuva 24h:* ${precip24h.toFixed(1)} mm\n` +
       `⏰ *Leitura:* ${formattedDate}\n\n` +
-      `👉 Acompanhe ao vivo e veja a previsão de 7 dias:\n` +
-      `https://riomafra.vercel.app`
+      `👉 Acompanhe ao vivo e veja a previsão de 7 dias:` +
+      (includeUrl ? `\nhttps://riomafra.vercel.app` : '')
     );
   };
 
   const handleShare = async () => {
-    const text = getShareText();
     const url = 'https://riomafra.vercel.app';
 
     if (navigator.share) {
       try {
         await navigator.share({
           title: 'Nível Rio Negro — Boletim em Tempo Real',
-          text,
+          text: getShareText(false),
           url,
         });
         return;
@@ -95,14 +94,14 @@ export default function ShareButton({
   };
 
   const handleWhatsApp = () => {
-    const text = encodeURIComponent(getShareText());
+    const text = encodeURIComponent(getShareText(true));
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
     setShowOptions(false);
   };
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(getShareText());
+      await navigator.clipboard.writeText(getShareText(true));
       setCopied(true);
       setTimeout(() => {
         setCopied(false);

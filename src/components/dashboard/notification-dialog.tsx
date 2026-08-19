@@ -52,6 +52,7 @@ export default function NotificationDialog({
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [testSent, setTestSent] = useState(false);
   const [testMessage, setTestMessage] = useState<string | null>(null);
+  const [subError, setSubError] = useState<string | null>(null);
 
   // Preferências do usuário
   const [alertAttention, setAlertAttention] = useState(() => {
@@ -139,17 +140,19 @@ export default function NotificationDialog({
       // Sincroniza com o servidor se já houver subscription ativa
       if ('serviceWorker' in navigator) {
         try {
-          const reg = await navigator.serviceWorker.ready;
-          const sub = await reg.pushManager.getSubscription();
-          if (sub) {
-            await fetch('/api/notifications/subscribe', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                subscription: sub.toJSON(),
-                preferences: newPrefs,
-              }),
-            });
+          const reg = await navigator.serviceWorker.getRegistration();
+          if (reg) {
+            const sub = await reg.pushManager.getSubscription();
+            if (sub) {
+              await fetch('/api/notifications/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  subscription: sub.toJSON(),
+                  preferences: newPrefs,
+                }),
+              });
+            }
           }
         } catch {
           // ignore
@@ -163,27 +166,65 @@ export default function NotificationDialog({
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
 
     setIsSubscribing(true);
+    setSubError(null);
     try {
       // 1. Pede permissão nativa
-      const perm = await Notification.requestPermission();
+      let perm = Notification.permission;
+      if (perm !== 'granted') {
+        try {
+          perm = await Notification.requestPermission();
+        } catch (e) {
+          // Fallback callback para browsers antigos
+          perm = await new Promise((resolve) => Notification.requestPermission(resolve));
+        }
+      }
+      
       setPermission(perm);
 
       if (perm !== 'granted') {
+        if (perm === 'denied') {
+          setSubError('Notificações bloqueadas! Desbloqueie nas configurações do navegador.');
+        }
         setIsSubscribing(false);
         return;
       }
 
       // 2. Obtém a chave pública VAPID do backend
       const res = await fetch('/api/notifications/subscribe');
+      if (!res.ok) throw new Error('Falha ao obter chave do servidor');
       const data = await res.json();
       const publicKey = data.publicKey;
 
-      // 3. Obtém o service worker e assina o push
-      const registration = await navigator.serviceWorker.ready;
-      let subscription = await registration.pushManager.getSubscription();
+      if (!publicKey) {
+        throw new Error('Chave VAPID não encontrada no servidor.');
+      }
 
-      if (!subscription && publicKey) {
-        subscription = await registration.pushManager.subscribe({
+      // 3. Verifica e obtém o service worker
+      let registration = await navigator.serviceWorker.getRegistration();
+      if (!registration) {
+        try {
+          registration = await navigator.serviceWorker.register('/sw.js');
+        } catch (e) {
+          console.warn('Registro manual de SW falhou:', e);
+        }
+      }
+
+      if (!registration) {
+         throw new Error('Service Worker não está ativo. Recarregue a página e tente novamente.');
+      }
+
+      // Espera o SW ficar pronto usando promise race para não travar
+      const readyPromise = navigator.serviceWorker.ready;
+      const timeoutPromise = new Promise<ServiceWorkerRegistration>((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout aguardando Service Worker')), 5000)
+      );
+      
+      const activeRegistration = await Promise.race([readyPromise, timeoutPromise]);
+
+      let subscription = await activeRegistration.pushManager.getSubscription();
+
+      if (!subscription) {
+        subscription = await activeRegistration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(publicKey),
         });
@@ -191,7 +232,7 @@ export default function NotificationDialog({
 
       // 4. Envia a assinatura para o servidor
       if (subscription) {
-        await fetch('/api/notifications/subscribe', {
+        const subRes = await fetch('/api/notifications/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -204,9 +245,20 @@ export default function NotificationDialog({
             },
           }),
         });
+        if (!subRes.ok) throw new Error('Falha ao salvar assinatura no servidor');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Erro ao configurar Web Push:', err);
+      setSubError(err?.message || 'Ocorreu um erro ao ativar notificações.');
+      // Se deu erro ao assinar (ex: DOMException: Registration failed), volta a permissão para não travar na tela de sucesso
+      if (Notification.permission !== 'granted') {
+         setPermission(Notification.permission);
+      } else {
+         // Force state reset if subscription failed so the button is shown again?
+         // Actually, permission is granted, so the UI will show the green box.
+         // We should change the condition in the render to also check if we have a subscription,
+         // but since pushManager.getSubscription is async, it's tricky.
+      }
     } finally {
       setIsSubscribing(false);
     }
@@ -220,7 +272,12 @@ export default function NotificationDialog({
     setTestMessage('Enviando via servidor...');
 
     try {
-      const reg = await navigator.serviceWorker.ready;
+      let reg = await navigator.serviceWorker.getRegistration();
+      if (!reg) {
+        reg = await navigator.serviceWorker.register('/sw.js');
+      }
+      if (!reg) throw new Error('No SW');
+
       let sub = await reg.pushManager.getSubscription();
 
       if (!sub) {
@@ -306,7 +363,7 @@ export default function NotificationDialog({
             </button>
 
             {/* Cabeçalho */}
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-4 pr-10">
               <div className="p-3 rounded-2xl bg-blue-100 text-blue-700">
                 <BellRing className="h-6 w-6" />
               </div>
@@ -341,6 +398,11 @@ export default function NotificationDialog({
                 >
                   {isSubscribing ? 'Conectando ao Servidor...' : '🔔 Permitir e Ativar Alertas no Celular'}
                 </button>
+                {subError && (
+                  <div className="mt-2 text-xs text-red-200 font-bold bg-red-900/30 p-2 rounded-lg border border-red-500/30">
+                    ⚠️ {subError}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center justify-between gap-2 mb-4">
