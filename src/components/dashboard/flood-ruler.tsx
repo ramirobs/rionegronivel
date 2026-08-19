@@ -152,23 +152,26 @@ export default function FloodRuler({ currentLevel, trend }: FloodRulerProps) {
                 */}
                 {!isLast && (
                   <div 
-                    className="absolute w-2.5 left-1/2 -translate-x-1/2 bg-slate-100 rounded-full shadow-inner z-0 overflow-hidden"
+                    className="absolute w-2.5 left-1/2 -translate-x-1/2 z-0"
                     style={{ top: '24px', bottom: '-48px' }} 
                   >
-                    {/* Água (preenchendo de baixo para cima) */}
-                    {segmentPercent > 0 && (
-                      <div 
-                        className="absolute bottom-0 left-0 w-full bg-blue-500 transition-all duration-700 ease-out shadow-[0_0_8px_rgba(59,130,246,0.6)]"
-                        style={{ height: `${segmentPercent}%` }}
-                      >
-                         {/* Efeito visual na água */}
-                         <div className="absolute inset-0 opacity-20" style={{
-                             backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.5) 4px, rgba(255,255,255,0.5) 8px)'
-                         }} />
-                      </div>
-                    )}
+                    {/* Tubo visual com overflow-hidden para conter o preenchimento da água */}
+                    <div className="absolute inset-0 bg-slate-100 rounded-full shadow-inner overflow-hidden">
+                      {/* Água (preenchendo de baixo para cima) */}
+                      {segmentPercent > 0 && (
+                        <div 
+                          className="absolute bottom-0 left-0 w-full bg-blue-500 transition-all duration-700 ease-out shadow-[0_0_8px_rgba(59,130,246,0.6)]"
+                          style={{ height: `${segmentPercent}%` }}
+                        >
+                           {/* Efeito visual na água */}
+                           <div className="absolute inset-0 opacity-20" style={{
+                               backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.5) 4px, rgba(255,255,255,0.5) 8px)'
+                           }} />
+                        </div>
+                      )}
+                    </div>
 
-                    {/* Marcador flutuante no nível exato da água neste tubo */}
+                    {/* Marcador flutuante no nível exato da água neste tubo (fora do overflow-hidden) */}
                     {showMarkerHere && (
                       <div 
                          className="absolute w-full z-30 transition-all duration-700"
