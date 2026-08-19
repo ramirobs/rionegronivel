@@ -49,6 +49,7 @@ export const metadata: Metadata = {
   },
 };
 
+import Image from "next/image";
 import InstallPWABanner from "@/components/dashboard/install-pwa-banner";
 
 export default function RootLayout({
@@ -63,32 +64,15 @@ export default function RootLayout({
         <header className="border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 z-50 pt-safe">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 border border-amber-500/30 flex items-center justify-center shadow-md shadow-amber-500/10 p-1.5 shrink-0">
-                <svg
-                  className="w-full h-full"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  {/* Triângulo de Alerta Dourado */}
-                  <path
-                    d="M12 3.5L20.5 18.5C21 19.5 20.2 20.5 19 20.5H5C3.8 20.5 3 19.5 3.5 18.5L12 3.5Z"
-                    stroke="#f59e0b"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  {/* Ponto de Exclamação */}
-                  <path d="M12 8.5V12" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" />
-                  <circle cx="12" cy="14.5" r="1" fill="#fbbf24" />
-                  {/* Onda de Água Subindo */}
-                  <path
-                    d="M4.5 17.5C7 15.5 9.5 15.5 12 17.5C14.5 19.5 17 19.5 19.5 17.5"
-                    stroke="#38bdf8"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
+              <div className="w-10 h-10 rounded-xl overflow-hidden shadow-md shadow-slate-900/10 border border-slate-200 bg-slate-900 shrink-0 flex items-center justify-center">
+                <Image
+                  src="/logo.png"
+                  alt="Logo Nível Rio Negro - Ponte Metálica e Prevenção"
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-cover"
+                  priority
+                />
               </div>
               <div>
                 <div className="flex items-center gap-2">
