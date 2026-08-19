@@ -88,24 +88,12 @@ export default function InstallPWABanner() {
       <div className="fixed bottom-20 md:bottom-6 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-md z-40 animate-in slide-in-from-bottom-5 duration-300">
         <div className="bg-slate-900/95 text-white backdrop-blur-md p-3.5 sm:p-4 rounded-2xl border border-slate-700 shadow-2xl flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 border border-amber-500/30 flex items-center justify-center p-2 shrink-0 shadow-sm">
-              <svg className="w-full h-full" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M12 3.5L20.5 18.5C21 19.5 20.2 20.5 19 20.5H5C3.8 20.5 3 19.5 3.5 18.5L12 3.5Z"
-                  stroke="#f59e0b"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path d="M12 8.5V12" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" />
-                <circle cx="12" cy="14.5" r="1" fill="#fbbf24" />
-                <path
-                  d="M4.5 17.5C7 15.5 9.5 15.5 12 17.5C14.5 19.5 17 19.5 19.5 17.5"
-                  stroke="#38bdf8"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
+            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm shadow-slate-900/10 border border-slate-700 bg-slate-900 shrink-0 flex items-center justify-center">
+              <img
+                src="/logo.png"
+                alt="App Logo"
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="min-w-0">
               <h4 className="text-xs sm:text-sm font-bold text-white leading-tight truncate">
