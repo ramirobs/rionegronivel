@@ -153,7 +153,10 @@ export default function NotificationDialog({
 
   // Registra no Web Push Server
   const registerWebPush = async () => {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+      alert('Seu navegador não suporta Service Workers.');
+      return;
+    }
 
     setIsSubscribing(true);
     try {
@@ -162,29 +165,47 @@ export default function NotificationDialog({
       setPermission(perm);
 
       if (perm !== 'granted') {
+        alert('Você não concedeu permissão para notificações.');
         setIsSubscribing(false);
         return;
       }
 
-      // 2. Obtém a chave pública VAPID do backend
+      // 2. Garante que o Service Worker está registrado
+      let registration = await navigator.serviceWorker.getRegistration();
+      if (!registration) {
+        registration = await navigator.serviceWorker.register('/sw.js');
+      }
+      await navigator.serviceWorker.ready;
+      registration = await navigator.serviceWorker.getRegistration();
+
+      if (!registration) {
+        throw new Error('Falha ao registrar o Service Worker.');
+      }
+
+      // 3. Obtém a chave pública VAPID do backend
       const res = await fetch('/api/notifications/subscribe');
+      if (!res.ok) {
+        throw new Error('Falha ao conectar com o servidor de push (Status: ' + res.status + ')');
+      }
       const data = await res.json();
       const publicKey = data.publicKey;
 
-      // 3. Obtém o service worker e assina o push
-      const registration = await navigator.serviceWorker.ready;
-      let subscription = await registration.pushManager.getSubscription();
+      if (!publicKey) {
+        throw new Error('Chave VAPID pública não encontrada no servidor.');
+      }
 
-      if (!subscription && publicKey) {
+      // 4. Assina o push
+      let subscription = await registration.pushManager.getSubscription();
+      if (!subscription) {
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(publicKey),
         });
       }
 
-      // 4. Envia a assinatura para o servidor
+      // 5. Envia a assinatura para o servidor
       if (subscription) {
-        await fetch('/api/notifications/subscribe', {
+        const postRes = await fetch('/api/notifications/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -197,9 +218,14 @@ export default function NotificationDialog({
             },
           }),
         });
+
+        if (!postRes.ok) {
+          throw new Error('Falha ao salvar assinatura no servidor.');
+        }
       }
-    } catch (err) {
-      console.warn('Erro ao configurar Web Push:', err);
+    } catch (err: any) {
+      console.error('Erro ao configurar Web Push:', err);
+      alert('Erro ao ativar alertas: ' + (err.message || String(err)));
     } finally {
       setIsSubscribing(false);
     }
@@ -207,24 +233,35 @@ export default function NotificationDialog({
 
   // Dispara teste real de Web Push vindo do servidor
   const handleTestClick = async () => {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+      alert('Navegador não suporta alertas em segundo plano.');
+      return;
+    }
 
     setTestSent(true);
     setTestMessage('Enviando via servidor...');
 
     try {
-      const reg = await navigator.serviceWorker.ready;
+      let reg = await navigator.serviceWorker.getRegistration();
+      if (!reg) reg = await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.ready;
+      reg = await navigator.serviceWorker.getRegistration();
+      if (!reg) throw new Error('Service Worker ausente.');
+
       let sub = await reg.pushManager.getSubscription();
 
       if (!sub) {
         // Se ainda não tiver assinatura push, cria agora
         const res = await fetch('/api/notifications/subscribe');
+        if (!res.ok) throw new Error('Servidor não respondeu VAPID.');
         const data = await res.json();
         if (data.publicKey) {
           sub = await reg.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(data.publicKey),
           });
+        } else {
+          throw new Error('Chave VAPID vazia.');
         }
       }
 
@@ -242,20 +279,16 @@ export default function NotificationDialog({
         if (result.success) {
           setTestMessage('Push enviado pelo servidor!');
         } else {
-          setTestMessage('Enviado!');
+          setTestMessage('Erro: ' + (result.error || 'Falha no servidor.'));
+          alert(result.error || 'Falha no servidor.');
         }
       } else {
-        // Fallback para notificação local caso push falhe
-        if (reg) {
-          reg.showNotification('🚨 Teste Local — Nível Rio Negro', {
-            body: `Nível do rio em ${currentLevel.toFixed(2)} m.`,
-            icon: '/icon',
-          });
-        }
-        setTestMessage('Alerta local exibido');
+        throw new Error('Falha ao obter inscrição.');
       }
-    } catch {
-      setTestMessage('Alerta enviado!');
+    } catch (err: any) {
+      console.error(err);
+      setTestMessage('Erro no Teste');
+      alert('Erro no teste: ' + (err.message || String(err)));
     }
 
     setTimeout(() => {
