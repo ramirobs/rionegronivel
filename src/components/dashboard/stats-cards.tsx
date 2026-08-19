@@ -16,26 +16,6 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-function formatFloodTime(totalDays: number) {
-  if (totalDays < 30) {
-    return { value: `${totalDays}`, unit: totalDays === 1 ? 'dia' : 'dias' };
-  }
-  
-  const years = Math.floor(totalDays / 365);
-  const remainingDays = totalDays % 365;
-  const months = Math.floor(remainingDays / 30);
-  
-  if (years === 0) {
-    return { value: `${months}`, unit: months === 1 ? 'mês' : 'meses' };
-  }
-  
-  if (months === 0) {
-    return { value: `${years}`, unit: years === 1 ? 'ano' : 'anos' };
-  }
-  
-  return { value: `${years}a ${months}m`, unit: '' };
-}
-
 interface StatsCardsProps {
   currentLevel: number;
   maxHistorical: { level: number; date: string };
@@ -128,8 +108,8 @@ export default function StatsCards({
     },
     {
       title: 'Tempo sem Enchente',
-      value: formatFloodTime(daysSinceFlood).value,
-      unit: formatFloodTime(daysSinceFlood).unit,
+      value: daysSinceFlood >= 999 ? '> 1' : `${daysSinceFlood}`,
+      unit: daysSinceFlood >= 999 ? 'ano' : 'dias',
       description: 'Sem ultrapassar a cota de 7,0 m',
       icon: CalendarClock,
       color: 'text-teal-600',

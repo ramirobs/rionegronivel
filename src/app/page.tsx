@@ -196,33 +196,14 @@ export default function DashboardPage() {
 
   // Dias sem enchente (> 7.0m)
   const floodDays = (() => {
-    // 1. Procura no histórico de curto prazo carregado
-    if (riverData?.data.length) {
-      const lastFlood = [...riverData.data]
-        .reverse()
-        .find((d) => d.level >= 7.0);
-      
-      if (lastFlood) {
-        const referenceTimestamp = lastFetch ? new Date(lastFetch).getTime() : new Date().getTime();
-        const diff = referenceTimestamp - new Date(lastFlood.date).getTime();
-        return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
-      }
-    }
-
-    // 2. Se não achar, usa o histórico de máximas anuais para estimar
-    if (statsData?.annualMaxima) {
-      const floodYears = statsData.annualMaxima.filter(a => a.maxLevel >= 7.0);
-      if (floodYears.length > 0) {
-        const lastFloodYear = Math.max(...floodYears.map(y => y.year));
-        // A enchente histórica ocorreu por volta de Out/Nov de 2023. Assumimos 15 de Outubro como estimativa padrão para anos passados.
-        const estimatedDate = new Date(lastFloodYear, 9, 15); 
-        const referenceTimestamp = lastFetch ? new Date(lastFetch).getTime() : new Date().getTime();
-        const diff = referenceTimestamp - estimatedDate.getTime();
-        return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
-      }
-    }
-
-    return 0; // Fallback
+    if (!riverData?.data.length) return 999;
+    const lastFlood = [...riverData.data]
+      .reverse()
+      .find((d) => d.level >= 7.0);
+    if (!lastFlood) return 999;
+    const referenceTimestamp = lastFetch ? new Date(lastFetch).getTime() : new Date(lastFlood.date).getTime();
+    const diff = referenceTimestamp - new Date(lastFlood.date).getTime();
+    return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
   })();
 
   // Calcula Risco Anual de Enchente
