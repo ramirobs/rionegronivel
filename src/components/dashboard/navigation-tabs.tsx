@@ -135,7 +135,7 @@ export default function NavigationTabs({
       {/* 2. Mobile Bottom Navigation Bar (Fixed Native-App Style)                  */}
       {/* ========================================================================= */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-slate-200/90 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] px-2 pt-2 pb-safe md:hidden flex items-center justify-around"
+        className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-slate-200/90 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] px-1 pt-1.5 pb-safe md:hidden flex items-center justify-between"
         aria-label="Navegação Mobile"
       >
         {tabs.map((tab) => {
@@ -147,7 +147,7 @@ export default function NavigationTabs({
               key={tab.id}
               onClick={() => onSelectTab(tab.id)}
               type="button"
-              className={`relative flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all duration-150 cursor-pointer min-w-[58px] ${
+              className={`relative flex-1 flex flex-col items-center justify-center py-1 px-0.5 rounded-xl transition-all duration-150 cursor-pointer ${
                 isActive ? 'text-blue-600 font-bold' : 'text-slate-500 font-medium'
               }`}
             >
@@ -178,7 +178,7 @@ export default function NavigationTabs({
                   </span>
                 )}
               </div>
-              <span className="text-[10px] tracking-tight leading-tight mt-0.5">
+              <span className="text-[9.5px] tracking-tighter leading-tight mt-0.5 truncate w-full text-center">
                 {tab.shortLabel}
               </span>
             </button>
