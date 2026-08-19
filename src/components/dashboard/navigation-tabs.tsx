@@ -79,7 +79,10 @@ export default function NavigationTabs({
               return (
                 <button
                   key={tab.id}
-                  onClick={() => onSelectTab(tab.id)}
+                  onClick={() => {
+                    onSelectTab(tab.id);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   type="button"
                   className={`relative flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-150 cursor-pointer whitespace-nowrap select-none flex-1 sm:flex-initial ${
                     isActive
@@ -129,10 +132,13 @@ export default function NavigationTabs({
           const isActive = activeTab === tab.id;
 
           return (
-            <button
-              key={tab.id}
-              onClick={() => onSelectTab(tab.id)}
-              type="button"
+              <button
+                key={tab.id}
+                onClick={() => {
+                  onSelectTab(tab.id);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                type="button"
               className={`relative flex-1 flex flex-col items-center justify-center py-1 px-0.5 rounded-xl transition-all duration-150 cursor-pointer ${
                 isActive ? 'text-blue-600 font-bold' : 'text-slate-500 font-medium'
               }`}
