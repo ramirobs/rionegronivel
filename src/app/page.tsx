@@ -183,10 +183,7 @@ export default function DashboardPage() {
       }
     : { level: 0, date: '' };
 
-  const avg30 =
-    levels.length > 0
-      ? levels.reduce((a, b) => a + b, 0) / levels.length
-      : 0;
+
 
   const precips = precipData?.data ?? [];
   const last24h = precips.slice(-1);

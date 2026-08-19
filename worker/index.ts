@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // ============================================================
 // Service Worker Customizado: Web Push Notifications & Alertas
 // ============================================================

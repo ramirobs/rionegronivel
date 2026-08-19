@@ -3,7 +3,6 @@
 import React from 'react';
 import {
   Activity,
-  Map,
   CloudRain,
   BarChart3,
   ShieldAlert,

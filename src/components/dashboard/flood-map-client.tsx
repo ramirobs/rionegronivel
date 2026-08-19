@@ -10,7 +10,7 @@ import {
   Sliders,
   Radio,
 } from 'lucide-react';
-import { FLOOD_ZONES, CRITICAL_POINTS, type CriticalPoint, type FloodZone } from '@/data/flood-map-data';
+import { CRITICAL_POINTS, type CriticalPoint } from '@/data/flood-map-data';
 
 interface FloodMapClientProps {
   currentLevel: number;

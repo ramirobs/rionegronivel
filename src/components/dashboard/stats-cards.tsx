@@ -6,7 +6,6 @@ import {
   CloudRain,
   CloudLightning,
   TrendingUp,
-  Activity,
   AlertTriangle,
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';

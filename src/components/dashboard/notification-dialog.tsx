@@ -35,6 +35,7 @@ export default function NotificationDialog({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -173,7 +174,7 @@ export default function NotificationDialog({
       if (perm !== 'granted') {
         try {
           perm = await Notification.requestPermission();
-        } catch (e) {
+        } catch {
           // Fallback callback para browsers antigos
           perm = await new Promise((resolve) => Notification.requestPermission(resolve));
         }
@@ -247,9 +248,10 @@ export default function NotificationDialog({
         });
         if (!subRes.ok) throw new Error('Falha ao salvar assinatura no servidor');
       }
-    } catch (err: any) {
-      console.warn('Erro ao configurar Web Push:', err);
-      setSubError(err?.message || 'Ocorreu um erro ao ativar notificações.');
+    } catch (err: unknown) {
+      const error = err as Error;
+      console.warn('Erro ao configurar Web Push:', error);
+      setSubError(error?.message || 'Ocorreu um erro ao ativar notificações.');
       // Se deu erro ao assinar (ex: DOMException: Registration failed), volta a permissão para não travar na tela de sucesso
       if (Notification.permission !== 'granted') {
          setPermission(Notification.permission);

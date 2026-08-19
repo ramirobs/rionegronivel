@@ -101,15 +101,13 @@ export const RISK_LEVELS: Record<RiskLevel, RiskConfig> = {
 export const REFRESH_INTERVAL_MS = 30 * 60 * 1000; // 30 minutos
 export const REVALIDATE_SECONDS = 1800; // ISR: 30 minutos
 
-// ----- API da ANA -----
-
-export const ANA_BASE_URL = 'http://telemetriaws1.ana.gov.br/ServiceANA.asmx';
+export const ANA_BASE_URL = 'https://www.ana.gov.br/hidrowebservice/EstacoesTelemetricas';
 
 export const ANA_ENDPOINTS = {
-  INVENTORY: `${ANA_BASE_URL}/HidroInventario`,
-  HISTORICAL: `${ANA_BASE_URL}/HidroSerieHistorica`,
-  TELEMETRIC: `${ANA_BASE_URL}/DadosHidrometeorologicos`,
-  TELEMETRIC_STATIONS: `${ANA_BASE_URL}/ListaEstacoesTelemetricas`,
+  AUTH: `${ANA_BASE_URL}/OAUth/v1`,
+  INVENTORY: `${ANA_BASE_URL}/HidroInventarioEstacoes/v1`,
+  TELEMETRIC_ADOPTED: `${ANA_BASE_URL}/HidroinfoanaSerieTelemetricaAdotada/v1`,
+  TELEMETRIC_DETAILED: `${ANA_BASE_URL}/HidroinfoanaSerieTelemetricaDetalhada/v1`,
 } as const;
 
 // ----- Dados do SNIRH (fallback) -----

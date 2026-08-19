@@ -67,7 +67,7 @@ export default function ReturnPeriod({ table, annualMaxima }: ReturnPeriodProps)
         <Sparkles className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
         <p className="leading-relaxed font-medium">
           <strong className="text-slate-900 font-bold">Como ler esta tabela: </strong>
-          Uma cheia de <strong>7,0 metros</strong> tem cerca de <strong>50% de chance</strong> de acontecer em qualquer ano (ocorre em média a cada 2 anos). Já uma cheia devastadora de <strong>10,8 metros</strong> (como em 2023) tem apenas <strong>4% de chance anual</strong> (em média a cada 25 anos).
+          Uma cheia de <strong>7,0 metros</strong> tem cerca de <strong>50% de chance</strong> de acontecer em qualquer ano (ocorre em média a cada 2 anos). Já uma cheia devastadora de <strong>14,0 metros</strong> (como em 2023) tem apenas <strong>4% de chance anual</strong> (em média a cada 25 anos).
         </p>
       </div>
 

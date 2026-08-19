@@ -30,7 +30,7 @@ const MOCK_ANNUAL_MAXIMA: { year: number; maxLevel: number }[] = [
   { year: 2020, maxLevel: 5.15 },
   { year: 2021, maxLevel: 6.70 },
   { year: 2022, maxLevel: 8.65 },
-  { year: 2023, maxLevel: 11.20 }, // Enchente histórica de 2023
+  { year: 2023, maxLevel: 14.00 }, // Enchente histórica de 2023
   { year: 2024, maxLevel: 7.45 },
   { year: 2025, maxLevel: 6.10 },
 ];
