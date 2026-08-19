@@ -183,11 +183,6 @@ export default function FloodRuler({ currentLevel, trend }: FloodRulerProps) {
                              {isFalling && <TrendingDown className="w-3.5 h-3.5 text-blue-600" />}
                              {!isRising && !isFalling && <div className="w-2 h-2 bg-blue-600 rounded-full" />}
                           </div>
-
-                          {/* Tooltip ao lado do marcador */}
-                          <div className="absolute top-1/2 left-5 -translate-y-1/2 ml-1 bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow whitespace-nowrap">
-                              {currentLevel.toFixed(2)}m
-                          </div>
                       </div>
                     )}
                   </div>
