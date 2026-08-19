@@ -66,7 +66,7 @@ export default function RootLayout({
         <header className="border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 z-50 pt-safe">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl overflow-hidden shadow-md shadow-slate-900/10 border border-slate-200 bg-slate-900 shrink-0 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white shrink-0 flex items-center justify-center">
                 <Image
                   src="/logo.png"
                   alt="Logo Nível Rio Negro - Ponte Metálica e Prevenção"
