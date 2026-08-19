@@ -14,7 +14,7 @@ import EmergencyContacts from '@/components/dashboard/emergency-contacts';
 import ForecastTrendChart from '@/components/dashboard/forecast-trend-chart';
 import ForecastDailyCards from '@/components/dashboard/forecast-daily-cards';
 import SkeletonDashboard from '@/components/dashboard/skeleton-dashboard';
-import { classifyRisk } from '@/lib/statistics';
+import { classifyRisk, calculateExceedanceProbability } from '@/lib/statistics';
 import type { RiskLevel } from '@/lib/constants';
 import type { WeatherForecastResponse } from '@/lib/weather-api';
 import type { HydrologicalProjectionResult } from '@/lib/hydrological-forecast';
@@ -206,6 +206,11 @@ export default function DashboardPage() {
     return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
   })();
 
+  // Calcula Risco Anual de Enchente
+  const annualFloodRisk = statsData?.gumbelParams
+    ? calculateExceedanceProbability(7.0, statsData.gumbelParams) * 100
+    : 0;
+
   if (loading) {
     return <SkeletonDashboard />;
   }
@@ -258,10 +263,10 @@ export default function DashboardPage() {
           <StatsCards
             currentLevel={currentLevel}
             maxHistorical={maxHistorical}
-            avg30days={avg30}
             precip24h={precip24h}
             precip72h={precip72h}
             daysSinceFlood={floodDays}
+            annualFloodRisk={annualFloodRisk}
           />
         </div>
       )}

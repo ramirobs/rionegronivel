@@ -7,6 +7,7 @@ import {
   CloudLightning,
   TrendingUp,
   Activity,
+  AlertTriangle,
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -18,19 +19,19 @@ function cn(...inputs: ClassValue[]) {
 interface StatsCardsProps {
   currentLevel: number;
   maxHistorical: { level: number; date: string };
-  avg30days: number;
   precip24h: number;
   precip72h: number;
   daysSinceFlood: number;
+  annualFloodRisk: number;
 }
 
 export default function StatsCards({
   currentLevel,
   maxHistorical,
-  avg30days,
   precip24h,
   precip72h,
   daysSinceFlood,
+  annualFloodRisk,
 }: StatsCardsProps) {
   // Formata a data da máxima histórica se existir
   let formattedMaxDate = maxHistorical.date;
@@ -79,13 +80,13 @@ export default function StatsCards({
       bgColor: 'bg-purple-50 border-purple-200',
     },
     {
-      title: 'Média dos Últimos 30 Dias',
-      value: avg30days.toFixed(2),
-      unit: 'm',
-      description: 'Nível médio histórico recente',
-      icon: Activity,
-      color: 'text-emerald-600',
-      bgColor: 'bg-emerald-50 border-emerald-200',
+      title: 'Risco de Enchente no Ano',
+      value: annualFloodRisk.toFixed(1),
+      unit: '%',
+      description: 'Probabilidade de exceder 7.0m',
+      icon: AlertTriangle,
+      color: 'text-rose-600',
+      bgColor: 'bg-rose-50 border-rose-200',
     },
     {
       title: 'Chuva nas Últimas 24h',
