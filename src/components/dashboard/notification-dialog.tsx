@@ -39,7 +39,12 @@ export default function NotificationDialog({
   });
 
   const [isSupported] = useState(() => {
-    return typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator;
+    return (
+      typeof window !== 'undefined' &&
+      'Notification' in window &&
+      'serviceWorker' in navigator &&
+      'PushManager' in window
+    );
   });
 
   const [isSubscribing, setIsSubscribing] = useState(false);
@@ -130,7 +135,7 @@ export default function NotificationDialog({
       localStorage.setItem('nivel_rio_negro_alert_prefs', JSON.stringify(newPrefs));
 
       // Sincroniza com o servidor se já houver subscription ativa
-      if ('serviceWorker' in navigator) {
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
         try {
           const reg = await navigator.serviceWorker.ready;
           const sub = await reg.pushManager.getSubscription();
@@ -157,15 +162,30 @@ export default function NotificationDialog({
       alert('Seu navegador não suporta Service Workers.');
       return;
     }
+    if (!('PushManager' in window)) {
+      alert('PushManager não suportado. No iPhone, adicione o site à Tela de Início primeiro.');
+      return;
+    }
 
     setIsSubscribing(true);
     try {
-      // 1. Pede permissão nativa
-      const perm = await Notification.requestPermission();
+      // 1. Pede permissão nativa de forma robusta
+      const perm = await new Promise<NotificationPermission>((resolve) => {
+        try {
+          const promise = Notification.requestPermission((result) => {
+            resolve(result);
+          });
+          if (promise) {
+            promise.then(resolve).catch(() => resolve('denied'));
+          }
+        } catch (e) {
+          resolve('denied');
+        }
+      });
       setPermission(perm);
 
       if (perm !== 'granted') {
-        alert('Você não concedeu permissão para notificações.');
+        alert('Você não concedeu permissão para notificações. Acesse as configurações do navegador e permita os alertas.');
         setIsSubscribing(false);
         return;
       }
@@ -175,11 +195,16 @@ export default function NotificationDialog({
       if (!registration) {
         registration = await navigator.serviceWorker.register('/sw.js');
       }
-      await navigator.serviceWorker.ready;
-      registration = await navigator.serviceWorker.getRegistration();
+      
+      // Espera o SW ficar pronto com timeout de 5 segundos
+      const swReady = new Promise<ServiceWorkerRegistration | undefined>((resolve) => {
+        navigator.serviceWorker.ready.then(resolve);
+        setTimeout(() => resolve(undefined), 5000);
+      });
+      registration = await swReady;
 
       if (!registration) {
-        throw new Error('Falha ao registrar o Service Worker.');
+        throw new Error('Timeout: O Service Worker demorou muito para ficar pronto.');
       }
 
       // 3. Obtém a chave pública VAPID do backend
@@ -237,6 +262,10 @@ export default function NotificationDialog({
       alert('Navegador não suporta alertas em segundo plano.');
       return;
     }
+    if (!('PushManager' in window)) {
+      alert('PushManager não suportado neste navegador.');
+      return;
+    }
 
     setTestSent(true);
     setTestMessage('Enviando via servidor...');
@@ -244,9 +273,14 @@ export default function NotificationDialog({
     try {
       let reg = await navigator.serviceWorker.getRegistration();
       if (!reg) reg = await navigator.serviceWorker.register('/sw.js');
-      await navigator.serviceWorker.ready;
-      reg = await navigator.serviceWorker.getRegistration();
-      if (!reg) throw new Error('Service Worker ausente.');
+      
+      const swReady = new Promise<ServiceWorkerRegistration | undefined>((resolve) => {
+        navigator.serviceWorker.ready.then(resolve);
+        setTimeout(() => resolve(undefined), 5000);
+      });
+      reg = await swReady;
+      
+      if (!reg) throw new Error('Timeout do Service Worker.');
 
       let sub = await reg.pushManager.getSubscription();
 
