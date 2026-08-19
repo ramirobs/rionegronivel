@@ -404,10 +404,18 @@ export default function NotificationDialog({
                     {subError.includes('bloqueadas') && (
                       <div className="text-[11px] text-red-100 font-medium bg-black/20 p-2 rounded-lg">
                         <strong className="block mb-1 text-white">Como resolver no Android:</strong>
-                        1. Toque no ícone de <strong className="text-white">Cadeado 🔒</strong> ou Configurações na barra de endereços lá em cima.<br/>
-                        2. Vá em <strong className="text-white">Permissões</strong>.<br/>
-                        3. Escolha <strong className="text-white">Notificações</strong> e marque <strong className="text-emerald-400">Permitir</strong>.<br/>
-                        4. Recarregue a página e tente novamente.
+                        {typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches ? (
+                          <>
+                            Como você instalou o app, vá nas <strong>Configurações do Celular</strong> &gt; <strong>Aplicativos</strong> &gt; <strong>Nível Rio Negro</strong> &gt; <strong>Permissões</strong> e permita as Notificações.
+                          </>
+                        ) : (
+                          <>
+                            1. Toque no ícone de <strong className="text-white">Cadeado 🔒</strong> na barra de endereços.<br/>
+                            2. Vá em <strong className="text-white">Permissões</strong>.<br/>
+                            3. Escolha <strong className="text-white">Notificações</strong> e marque <strong className="text-emerald-400">Permitir</strong>.<br/>
+                            4. Atualize a página.
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
