@@ -15,13 +15,12 @@ import EmergencyContacts from '@/components/dashboard/emergency-contacts';
 import ForecastTrendChart from '@/components/dashboard/forecast-trend-chart';
 import ForecastDailyCards from '@/components/dashboard/forecast-daily-cards';
 import SkeletonDashboard from '@/components/dashboard/skeleton-dashboard';
-import FloodMap from '@/components/dashboard/flood-map';
 import { classifyRisk } from '@/lib/statistics';
 import type { RiskLevel } from '@/lib/constants';
 import type { WeatherForecastResponse } from '@/lib/weather-api';
 import type { HydrologicalProjectionResult } from '@/lib/hydrological-forecast';
 import type { CombinedChartPoint } from '@/app/api/weather-forecast/route';
-import { Map, CloudRain, SlidersHorizontal, BarChart3, ShieldAlert, Sparkles } from 'lucide-react';
+import { CloudRain, SlidersHorizontal, BarChart3, ShieldAlert, Sparkles } from 'lucide-react';
 
 interface RiverDataPoint {
   date: string;
@@ -266,31 +265,6 @@ export default function DashboardPage() {
             precip72h={precip72h}
             daysSinceFlood={floodDays}
           />
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* ABA: MAPA DA CHEIA & MANCHA DE INUNDAÇÃO (RIO NEGRO / MAFRA)             */}
-      {/* ========================================================================= */}
-      {activeTab === 'map' && (
-        <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-200">
-          <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-2xl p-4 sm:p-6 text-white shadow-md border border-blue-800/40">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-blue-500/20 border border-blue-400/30 backdrop-blur-md rounded-xl">
-                <Map className="w-6 h-6 text-blue-400" />
-              </div>
-              <div>
-                <h2 className="text-base sm:text-lg font-bold">
-                  Mapa Interativo da Mancha de Inundação
-                </h2>
-                <p className="text-xs sm:text-sm text-blue-200 mt-0.5">
-                  Visualização geoespacial das áreas atingidas pelo Rio Negro e status de travessia das pontes entre Rio Negro (PR) e Mafra (SC).
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <FloodMap currentLevel={currentLevel} />
         </div>
       )}
 

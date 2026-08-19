@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import type { RiskLevel } from '@/lib/constants';
 
-export type TabId = 'live' | 'map' | 'forecast' | 'simulator' | 'history' | 'emergency';
+export type TabId = 'live' | 'forecast' | 'simulator' | 'history' | 'emergency';
 
 interface NavigationTabsProps {
   activeTab: TabId;
@@ -41,12 +41,6 @@ export default function NavigationTabs({
       label: 'Ao Vivo',
       shortLabel: 'Ao Vivo',
       icon: Activity,
-    },
-    {
-      id: 'map',
-      label: 'Mapa da Cheia',
-      shortLabel: 'Mapa',
-      icon: Map,
     },
     {
       id: 'forecast',

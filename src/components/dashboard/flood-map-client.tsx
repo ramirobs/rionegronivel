@@ -114,38 +114,21 @@ export default function FloodMapClient({ currentLevel }: FloodMapClientProps) {
     layersGroup.clearLayers();
     markersGroup.clearLayers();
 
-    // A. Renderiza Polígonos de Inundação das faixas ativas
-    FLOOD_ZONES.forEach((zone: FloodZone) => {
-      if (effectiveLevel >= zone.minLevel) {
-        zone.polygons.forEach((polyCoords) => {
-          const polygon = L.polygon(polyCoords, {
-            color: zone.strokeColor,
-            weight: 2,
-            opacity: 0.8,
-            fillColor: zone.color,
-            fillOpacity: zone.fillOpacity,
-          });
-
-          polygon.bindTooltip(
-            `<strong>${zone.name}</strong><br/>Cota: a partir de ${zone.minLevel.toFixed(2)}m`,
-            { sticky: true }
-          );
-
-          polygon.addTo(layersGroup);
-        });
-      }
-    });
-
-    // B. Renderiza Marcadores dos Pontos Críticos
+    // A. Renderiza Marcadores dos Pontos Críticos e Status
     CRITICAL_POINTS.forEach((point: CriticalPoint) => {
       const isFlooded = effectiveLevel >= point.floodThreshold;
+      const isWarning = effectiveLevel >= point.floodThreshold - 1.0;
       const isBridge = point.type === 'bridge';
       const isStation = point.type === 'station';
 
       // Criação de Ícone HTML Customizado
-      let iconColor = isFlooded ? '#ef4444' : '#10b981';
+      let iconColor = '#10b981'; // Verde (Seguro)
       if (isStation) {
-        iconColor = '#0284c7';
+        iconColor = '#0284c7'; // Azul (Estação)
+      } else if (isFlooded) {
+        iconColor = '#ef4444'; // Vermelho (Alagado)
+      } else if (isWarning) {
+        iconColor = '#f59e0b'; // Laranja (Atenção/Próximo do limite)
       }
 
       const customHtml = `
@@ -400,7 +383,7 @@ export default function FloodMapClient({ currentLevel }: FloodMapClientProps) {
               <div className="flex items-center justify-between font-bold text-slate-900 pb-1 border-b border-slate-100">
                 <div className="flex items-center gap-1.5">
                   <Info className="h-4 w-4 text-blue-600" />
-                  <span>Legenda da Mancha</span>
+                  <span>Legenda de Risco</span>
                 </div>
                 <button
                   onClick={() => setShowLegend(false)}
@@ -413,25 +396,25 @@ export default function FloodMapClient({ currentLevel }: FloodMapClientProps) {
 
               <div className="space-y-1.5 text-[11px]">
                 <div className="flex items-center gap-2">
-                  <span className="w-3.5 h-3.5 rounded-md bg-[#0284c7] opacity-80 shrink-0" />
-                  <span><strong>6,5m a 7,5m:</strong> Várzeas & Passa Três</span>
+                  <span className="w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm bg-[#ef4444] shrink-0" />
+                  <span><strong>Alagado:</strong> Cota limite ultrapassada</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-3.5 h-3.5 rounded-md bg-[#f59e0b] opacity-80 shrink-0" />
-                  <span><strong>7,5m a 9,0m:</strong> Vila Argentina & Ivete</span>
+                  <span className="w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm bg-[#f59e0b] shrink-0" />
+                  <span><strong>Atenção:</strong> Água muito próxima (-1m)</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-3.5 h-3.5 rounded-md bg-[#f97316] opacity-80 shrink-0" />
-                  <span><strong>9,0m a 11,0m:</strong> Centro & Pontes</span>
+                  <span className="w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm bg-[#10b981] shrink-0" />
+                  <span><strong>Seguro:</strong> Trânsito livre no local</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-3.5 h-3.5 rounded-md bg-[#ef4444] opacity-80 shrink-0" />
-                  <span><strong>&gt; 11,0m:</strong> Cheia Extrema (2023/1983)</span>
+                  <span className="w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm bg-[#0284c7] shrink-0" />
+                  <span><strong>Estação ANA:</strong> Ponto de medição oficial</span>
                 </div>
               </div>
 
               <div className="pt-1 text-[10px] text-slate-500 font-medium border-t border-slate-100">
-                Toque nos marcadores 🌉 para ver a cota de cada ponte.
+                Toque nos marcadores para ver a cota de inundação do local.
               </div>
             </div>
           ) : (
