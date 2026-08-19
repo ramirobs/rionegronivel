@@ -55,8 +55,8 @@ async function getAuthToken(): Promise<string | null> {
     }
 
     const data = await response.json();
-    if (data && data.items && data.items.length > 0 && data.items[0].tokenautenticacao) {
-      cachedToken = data.items[0].tokenautenticacao;
+    if (data && data.items && data.items.tokenautenticacao) {
+      cachedToken = data.items.tokenautenticacao;
       tokenExpiration = Date.now() + 45 * 60 * 1000;
       return cachedToken;
     }
