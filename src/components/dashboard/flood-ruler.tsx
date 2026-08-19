@@ -1,6 +1,6 @@
 'use client';
 
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface FloodRulerProps {
   currentLevel: number;
@@ -15,7 +15,7 @@ export default function FloodRuler({ currentLevel, trend }: FloodRulerProps) {
       name: 'Leito Normal',
       status: 'Normal',
       desc: 'Rio corre no canal. Margens livres.',
-      dotColor: 'bg-emerald-500',
+      colorHex: '#10b981', // emerald-500
       badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
       impact: 'Sem impacto urbano.',
     },
@@ -25,7 +25,7 @@ export default function FloodRuler({ currentLevel, trend }: FloodRulerProps) {
       name: 'Início de Atenção',
       status: 'Atenção',
       desc: 'Parques e orla ribeirinha com água acumulada.',
-      dotColor: 'bg-amber-500',
+      colorHex: '#f59e0b', // amber-500
       badgeColor: 'bg-amber-100 text-amber-800 border-amber-300',
       impact: 'Margens inundadas. Evite áreas de lazer próximas ao rio.',
     },
@@ -35,7 +35,7 @@ export default function FloodRuler({ currentLevel, trend }: FloodRulerProps) {
       name: 'Cota de Alerta',
       status: 'Alerta',
       desc: 'Várzeas alagam. Entorno da Ponte Metálica em vigilância.',
-      dotColor: 'bg-orange-500',
+      colorHex: '#f97316', // orange-500
       badgeColor: 'bg-orange-100 text-orange-800 border-orange-300',
       impact: 'Trânsito pode ser desviado em ruas baixas.',
     },
@@ -45,7 +45,7 @@ export default function FloodRuler({ currentLevel, trend }: FloodRulerProps) {
       name: 'Residências Atingidas',
       status: 'Enchente',
       desc: 'Água invade casas e comércios em Mafra e Rio Negro.',
-      dotColor: 'bg-rose-500',
+      colorHex: '#f43f5e', // rose-500
       badgeColor: 'bg-rose-100 text-rose-800 border-rose-300',
       impact: 'Famílias ribeirinhas devem evacuar imediatamente.',
     },
@@ -55,7 +55,7 @@ export default function FloodRuler({ currentLevel, trend }: FloodRulerProps) {
       name: 'Enchente Grave',
       status: 'Crítico',
       desc: 'Pontes bloqueadas, vias centrais submersas (ex: 2022).',
-      dotColor: 'bg-red-600',
+      colorHex: '#dc2626', // red-600
       badgeColor: 'bg-red-200 text-red-900 border-red-400',
       impact: 'Bloqueio total de travessia Rio Negro ⇄ Mafra.',
     },
@@ -65,193 +65,259 @@ export default function FloodRuler({ currentLevel, trend }: FloodRulerProps) {
       name: 'Cheia Histórica (2023)',
       status: 'Histórico',
       desc: 'Maior cheia em 30 anos. Cidades submersas.',
-      dotColor: 'bg-purple-600',
+      colorHex: '#9333ea', // purple-600
       badgeColor: 'bg-purple-100 text-purple-900 border-purple-300',
       impact: 'Destruição em larga escala. Isolamento total.',
     },
   ];
 
-  // Encontrar o estágio atual
+  // Encontrar o estágio mais próximo atingido
   const currentStageIdx = stages.reduce((acc, stage, idx) => {
     return currentLevel >= stage.level ? idx : acc;
   }, 0);
 
-  // Ícone e texto da tendência
-  const TrendIcon =
-    trend?.direction === 'rising'
-      ? TrendingUp
-      : trend?.direction === 'falling'
-      ? TrendingDown
-      : Minus;
+  // Status de tendência
+  const isRising = trend?.direction === 'rising';
+  const isFalling = trend?.direction === 'falling';
 
-  const trendLabel =
-    trend?.direction === 'rising'
-      ? `Subindo ${trend.rate > 0 ? `+${trend.rate.toFixed(1)} cm/h` : ''}`
-      : trend?.direction === 'falling'
-      ? `Descendo ${trend.rate > 0 ? `${trend.rate.toFixed(1)} cm/h` : ''}`
-      : 'Estável';
+  const TrendIcon = isRising ? TrendingUp : isFalling ? TrendingDown : Minus;
 
-  const trendColor =
-    trend?.direction === 'rising'
-      ? 'text-rose-600 bg-rose-50 border-rose-200'
-      : trend?.direction === 'falling'
-      ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
-      : 'text-slate-500 bg-slate-50 border-slate-200';
+  const trendLabel = isRising
+    ? `Subindo ${trend.rate > 0 ? `(+${trend.rate.toFixed(1)} cm/h)` : ''}`
+    : isFalling
+    ? `Descendo ${trend.rate > 0 ? `(-${trend.rate.toFixed(1)} cm/h)` : ''}`
+    : 'Nível Estável';
 
-  // Animação CSS baseada na tendência
-  const trendAnimClass =
-    trend?.direction === 'rising'
-      ? 'animate-[flowUp_2s_ease-in-out_infinite]'
-      : trend?.direction === 'falling'
-      ? 'animate-[flowDown_2s_ease-in-out_infinite]'
-      : '';
+  const trendHeaderBadge = isRising
+    ? 'text-rose-700 bg-rose-50 border-rose-200 ring-1 ring-rose-200'
+    : isFalling
+    ? 'text-emerald-700 bg-emerald-50 border-emerald-200 ring-1 ring-emerald-200'
+    : 'text-slate-600 bg-slate-50 border-slate-200';
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs">
-      {/* CSS da animação de fluxo */}
+    <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-6 shadow-xs">
+      {/* Estilos e Animações de Fluxo da Régua */}
       <style jsx>{`
-        @keyframes flowUp {
-          0%, 100% { opacity: 0.6; transform: translateY(0); }
-          50% { opacity: 1; transform: translateY(-6px); }
+        @keyframes waterFlowUp {
+          0% {
+            background-position: 0 40px;
+          }
+          100% {
+            background-position: 0 0;
+          }
         }
-        @keyframes flowDown {
-          0%, 100% { opacity: 0.6; transform: translateY(0); }
-          50% { opacity: 1; transform: translateY(6px); }
+        @keyframes waterFlowDown {
+          0% {
+            background-position: 0 0;
+          }
+          100% {
+            background-position: 0 40px;
+          }
+        }
+        @keyframes floatPulse {
+          0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.18);
+            opacity: 0.85;
+          }
+        }
+        .water-stream-up {
+          background-image: repeating-linear-gradient(
+            0deg,
+            #2563eb 0px,
+            #3b82f6 8px,
+            #60a5fa 14px,
+            #2563eb 20px
+          );
+          background-size: 100% 20px;
+          animation: waterFlowUp 0.9s linear infinite;
+        }
+        .water-stream-down {
+          background-image: repeating-linear-gradient(
+            180deg,
+            #059669 0px,
+            #10b981 8px,
+            #34d399 14px,
+            #059669 20px
+          );
+          background-size: 100% 20px;
+          animation: waterFlowDown 0.9s linear infinite;
+        }
+        .water-stream-stable {
+          background-color: #3b82f6;
+        }
+        .pulse-marker {
+          animation: floatPulse 2s ease-in-out infinite;
         }
       `}</style>
 
-      {/* Header com tendência */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
+      {/* Cabeçalho */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
           <h3 className="text-base font-bold text-slate-900">
             Régua Prática: O que acontece na cidade?
           </h3>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Pontos de alagamento conhecidos conforme a altura da água
+            Pontos críticos de cheia e comportamento da água em Rio Negro e Mafra
           </p>
         </div>
 
         {trend && (
           <div
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border ${trendColor}`}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${trendHeaderBadge}`}
           >
-            <TrendIcon className="h-3.5 w-3.5" />
+            <TrendIcon className="h-4 w-4" />
             <span>{trendLabel}</span>
           </div>
         )}
       </div>
 
-      {/* Régua vertical com linha contínua e pontos */}
-      <div className="relative ml-1 sm:ml-2">
+      {/* Lista da Régua */}
+      <div className="flex flex-col">
         {stages.map((stage, idx) => {
           const isReached = currentLevel >= stage.level;
           const isCurrentNearest = idx === currentStageIdx;
-          const isLast = idx === stages.length - 1;
           const isFirst = idx === 0;
+          const isLast = idx === stages.length - 1;
 
-          // Para o segmento da linha: está totalmente preenchido?
-          const nextStageReached = !isLast && currentLevel >= stages[idx + 1].level;
+          // Próximo nível para cálculo do segmento
+          const nextLevel = !isLast ? stages[idx + 1].level : stage.level;
+          const isNextReached = !isLast && currentLevel >= nextLevel;
 
-          // Calcular preenchimento parcial do segmento atual
-          let segmentFillPercent = 0;
+          // Porcentagem de preenchimento deste segmento
+          let segmentPercent = 0;
           if (!isLast) {
-            if (nextStageReached) {
-              segmentFillPercent = 100;
+            if (isNextReached) {
+              segmentPercent = 100;
             } else if (isCurrentNearest) {
-              const nextLevel = stages[idx + 1].level;
               const range = nextLevel - stage.level;
-              const progress = (currentLevel - stage.level) / range;
-              segmentFillPercent = Math.min(Math.max(progress * 100, 0), 100);
+              const diff = currentLevel - stage.level;
+              segmentPercent = Math.min(Math.max((diff / range) * 100, 0), 100);
             }
           }
 
-          return (
-            <div key={idx} className="relative flex items-stretch">
-              {/* Coluna da linha vertical e ponto */}
-              <div className="flex flex-col items-center mr-4 relative" style={{ width: '24px' }}>
+          // Cor e animação do fluxo d'água
+          const streamClass = isRising
+            ? 'water-stream-up'
+            : isFalling
+            ? 'water-stream-down'
+            : 'water-stream-stable';
 
-                {/* Pequeno segmento de linha ACIMA do primeiro ponto para iniciar visualmente */}
-                {isFirst && (
+          return (
+            <div key={idx} className="relative flex items-start group">
+              {/* Coluna da Linha e dos Pontos (Perfeitamente Centralizada) */}
+              <div className="relative flex flex-col items-center shrink-0 w-8 self-stretch">
+                {/* Linha Conectora do Topo (até o centro do ponto) */}
+                {!isFirst && (
                   <div
-                    className={`w-[3px] h-3 mb-0 rounded-t-full ${
-                      isReached ? stage.dotColor : 'bg-slate-200'
+                    className={`w-1 absolute top-0 h-4.5 -translate-x-1/2 left-1/2 z-0 ${
+                      isReached ? (isRising ? 'water-stream-up' : isFalling ? 'water-stream-down' : 'bg-blue-500') : 'bg-slate-200'
                     }`}
                   />
                 )}
 
-                {/* Ponto do estágio */}
-                <div
-                  className={`relative z-10 shrink-0 w-4 h-4 rounded-full border-[2.5px] border-white shadow-sm transition-all duration-500 ${
-                    isReached ? stage.dotColor : 'bg-slate-300'
-                  } ${isCurrentNearest ? 'ring-4 ring-blue-400/30 scale-125' : ''}`}
-                />
+                {/* Ponto / Nó do Estágio (Altura 18px, centralizado na linha do título do card a 18px do topo) */}
+                <div className="h-9 flex items-center justify-center relative z-10 my-0">
+                  <div
+                    style={{
+                      backgroundColor: isReached ? stage.colorHex : '#cbd5e1',
+                    }}
+                    className={`w-4 h-4 rounded-full border-[2.5px] border-white shadow-md transition-transform duration-300 ${
+                      isCurrentNearest
+                        ? 'scale-125 ring-4 ring-blue-500/25'
+                        : isReached
+                        ? 'scale-100'
+                        : 'scale-90 opacity-80'
+                    }`}
+                  />
+                </div>
 
-                {/* Linha conectora até o próximo ponto */}
+                {/* Linha Conectora para Baixo (do centro do ponto até o final do card) */}
                 {!isLast && (
-                  <div className="relative w-[3px] flex-1 min-h-[44px] bg-slate-200 rounded-full overflow-hidden">
-                    {/* Preenchimento colorido */}
-                    {segmentFillPercent > 0 && (
+                  <div className="relative w-1 flex-1 bg-slate-200 z-0 overflow-visible">
+                    {/* Linha preenchida de água fluindo */}
+                    {segmentPercent > 0 && (
                       <div
-                        className={`absolute top-0 left-0 w-full rounded-full transition-all duration-700 ease-out ${
-                          isCurrentNearest ? 'bg-blue-500' : stage.dotColor
-                        } ${isCurrentNearest ? trendAnimClass : ''}`}
-                        style={{ height: `${segmentFillPercent}%` }}
+                        className={`absolute top-0 left-0 w-full rounded-b-full transition-all duration-500 ${streamClass}`}
+                        style={{ height: `${segmentPercent}%` }}
                       />
                     )}
 
-                    {/* Marcador do nível atual na linha */}
-                    {isCurrentNearest && segmentFillPercent > 0 && segmentFillPercent < 100 && (
+                    {/* Marcador flutuante exato do nível da água + indicador de fluxo */}
+                    {isCurrentNearest && segmentPercent > 0 && segmentPercent < 100 && (
                       <div
                         className="absolute left-1/2 -translate-x-1/2 z-20"
-                        style={{ top: `${segmentFillPercent}%` }}
+                        style={{ top: `${segmentPercent}%` }}
                       >
-                        <div className="w-[11px] h-[11px] -ml-[0.5px] -mt-[5px] rounded-full bg-blue-600 border-2 border-white shadow-lg animate-pulse" />
+                        {/* Ponto de Água Ativo */}
+                        <div className="relative -mt-2 -ml-2 w-4 h-4 rounded-full bg-blue-600 border-2 border-white shadow-lg pulse-marker flex items-center justify-center">
+                          {isRising ? (
+                            <ArrowUp className="w-2.5 h-2.5 text-white stroke-[3]" />
+                          ) : isFalling ? (
+                            <ArrowDown className="w-2.5 h-2.5 text-white stroke-[3]" />
+                          ) : (
+                            <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
                 )}
-
-                {/* Pequeno segmento de linha ABAIXO do último ponto para finalizar */}
-                {isLast && (
-                  <div className="w-[3px] h-3 mt-0 bg-slate-200 rounded-b-full" />
-                )}
               </div>
 
-              {/* Card do estágio */}
+              {/* Card de Informações do Estágio */}
               <div
-                className={`flex-1 mb-3 p-3 sm:p-3.5 rounded-xl border transition-all duration-300 ${
+                className={`flex-1 ml-3 mb-3.5 p-3 sm:p-4 rounded-2xl border transition-all duration-200 ${
                   isCurrentNearest
-                    ? 'bg-blue-50/80 border-blue-300 shadow-sm'
+                    ? 'bg-blue-50/90 border-blue-300 ring-2 ring-blue-400/20 shadow-xs'
                     : isReached
-                    ? 'bg-slate-50/60 border-slate-200'
-                    : 'bg-white border-slate-100 opacity-60'
+                    ? 'bg-slate-50/70 border-slate-200/90'
+                    : 'bg-white border-slate-200/60 opacity-60'
                 }`}
               >
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-black text-slate-800">{stage.label}</span>
-                  <span className="text-xs font-bold text-slate-700">{stage.name}</span>
-                  <span
-                    className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${stage.badgeColor}`}
-                  >
-                    {stage.status}
-                  </span>
+                {/* Linha do Cabeçalho do Card (Alinhada perfeitamente com o ponto do estágio) */}
+                <div className="flex flex-wrap items-center justify-between gap-2 min-h-6">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs sm:text-sm font-black text-slate-900 tracking-tight">
+                      {stage.label}
+                    </span>
+                    <span className="text-xs sm:text-sm font-bold text-slate-800">
+                      {stage.name}
+                    </span>
+                    <span
+                      className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${stage.badgeColor}`}
+                    >
+                      {stage.status}
+                    </span>
+                  </div>
 
                   {isCurrentNearest && (
-                    <span className="text-[10px] font-black text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md ml-auto flex items-center gap-1">
-                      <span className="inline-block w-1.5 h-1.5 bg-blue-600 rounded-full animate-ping" />
-                      NÍVEL ATUAL
-                    </span>
+                    <div className="flex items-center gap-1.5 bg-blue-600 text-white px-2.5 py-0.5 rounded-lg text-[11px] font-black shadow-xs animate-pulse">
+                      {isRising ? (
+                        <ArrowUp className="w-3 h-3 text-white animate-bounce" />
+                      ) : isFalling ? (
+                        <ArrowDown className="w-3 h-3 text-white animate-bounce" />
+                      ) : null}
+                      <span>NÍVEL ATUAL ({currentLevel.toFixed(2)}m)</span>
+                    </div>
                   )}
                 </div>
 
-                <p className="text-[11px] text-slate-500 font-medium mt-1">{stage.desc}</p>
+                {/* Descrição */}
+                <p className="text-xs text-slate-600 font-medium mt-1.5 leading-relaxed">
+                  {stage.desc}
+                </p>
 
-                {/* Impacto — só no estágio atual */}
+                {/* Caixa de Impacto e Ação Prática (apenas para o nível atingido) */}
                 {isCurrentNearest && (
-                  <div className="mt-2 pt-2 border-t border-blue-200/60">
-                    <p className="text-[11px] text-blue-700 font-semibold">
-                      ⚡ {stage.impact}
-                    </p>
+                  <div className="mt-2.5 pt-2.5 border-t border-blue-200/80 flex items-start gap-2 text-xs text-blue-900 font-semibold bg-blue-100/40 p-2 rounded-xl">
+                    <span className="shrink-0 text-sm">⚡</span>
+                    <span className="leading-snug">
+                      <strong className="font-bold">O que esperar:</strong> {stage.impact}
+                    </span>
                   </div>
                 )}
               </div>
