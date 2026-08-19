@@ -101,13 +101,21 @@ export const RISK_LEVELS: Record<RiskLevel, RiskConfig> = {
 export const REFRESH_INTERVAL_MS = 30 * 60 * 1000; // 30 minutos
 export const REVALIDATE_SECONDS = 1800; // ISR: 30 minutos
 
-export const ANA_BASE_URL = 'https://www.ana.gov.br/hidrowebservice/EstacoesTelemetricas';
+export const ANA_BASE_URL_REST = 'https://www.ana.gov.br/hidrowebservice/EstacoesTelemetricas';
+export const ANA_BASE_URL_SOAP = 'http://telemetriaws1.ana.gov.br/ServiceANA.asmx';
 
 export const ANA_ENDPOINTS = {
-  AUTH: `${ANA_BASE_URL}/OAUth/v1`,
-  INVENTORY: `${ANA_BASE_URL}/HidroInventarioEstacoes/v1`,
-  TELEMETRIC_ADOPTED: `${ANA_BASE_URL}/HidroinfoanaSerieTelemetricaAdotada/v1`,
-  TELEMETRIC_DETAILED: `${ANA_BASE_URL}/HidroinfoanaSerieTelemetricaDetalhada/v1`,
+  // Novos endpoints REST
+  AUTH: `${ANA_BASE_URL_REST}/OAUth/v1`,
+  INVENTORY_REST: `${ANA_BASE_URL_REST}/HidroInventarioEstacoes/v1`,
+  TELEMETRIC_ADOPTED: `${ANA_BASE_URL_REST}/HidroinfoanaSerieTelemetricaAdotada/v1`,
+  TELEMETRIC_DETAILED: `${ANA_BASE_URL_REST}/HidroinfoanaSerieTelemetricaDetalhada/v1`,
+
+  // Antigos endpoints SOAP (Legado)
+  INVENTORY_SOAP: `${ANA_BASE_URL_SOAP}/HidroInventario`,
+  HISTORICAL_SOAP: `${ANA_BASE_URL_SOAP}/HidroSerieHistorica`,
+  TELEMETRIC_SOAP: `${ANA_BASE_URL_SOAP}/DadosHidrometeorologicos`,
+  TELEMETRIC_STATIONS_SOAP: `${ANA_BASE_URL_SOAP}/ListaEstacoesTelemetricas`,
 } as const;
 
 // ----- Dados do SNIRH (fallback) -----
