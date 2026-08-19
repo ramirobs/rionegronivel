@@ -53,8 +53,6 @@ export default function RiverLevelChart({ data, period }: RiverLevelChartProps) 
                   return d.toLocaleDateString('pt-BR', {
                     day: '2-digit',
                     month: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
                   });
                 } catch {
                   return String(val);
