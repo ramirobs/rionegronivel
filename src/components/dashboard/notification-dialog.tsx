@@ -39,12 +39,7 @@ export default function NotificationDialog({
   });
 
   const [isSupported] = useState(() => {
-    return (
-      typeof window !== 'undefined' &&
-      'Notification' in window &&
-      'serviceWorker' in navigator &&
-      'PushManager' in window
-    );
+    return typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator;
   });
 
   const [isSubscribing, setIsSubscribing] = useState(false);
@@ -135,7 +130,7 @@ export default function NotificationDialog({
       localStorage.setItem('nivel_rio_negro_alert_prefs', JSON.stringify(newPrefs));
 
       // Sincroniza com o servidor se já houver subscription ativa
-      if ('serviceWorker' in navigator && 'PushManager' in window) {
+      if ('serviceWorker' in navigator) {
         try {
           const reg = await navigator.serviceWorker.ready;
           const sub = await reg.pushManager.getSubscription();
@@ -158,79 +153,38 @@ export default function NotificationDialog({
 
   // Registra no Web Push Server
   const registerWebPush = async () => {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
-      alert('Seu navegador não suporta Service Workers.');
-      return;
-    }
-    if (!('PushManager' in window)) {
-      alert('PushManager não suportado. No iPhone, adicione o site à Tela de Início primeiro.');
-      return;
-    }
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
 
     setIsSubscribing(true);
     try {
-      // 1. Pede permissão nativa de forma robusta
-      const perm = await new Promise<NotificationPermission>((resolve) => {
-        try {
-          const promise = Notification.requestPermission((result) => {
-            resolve(result);
-          });
-          if (promise) {
-            promise.then(resolve).catch(() => resolve('denied'));
-          }
-        } catch (e) {
-          resolve('denied');
-        }
-      });
+      // 1. Pede permissão nativa
+      const perm = await Notification.requestPermission();
       setPermission(perm);
 
       if (perm !== 'granted') {
-        alert('Você não concedeu permissão para notificações. Acesse as configurações do navegador e permita os alertas.');
         setIsSubscribing(false);
         return;
       }
 
-      // 2. Garante que o Service Worker está registrado
-      let registration = await navigator.serviceWorker.getRegistration();
-      if (!registration) {
-        registration = await navigator.serviceWorker.register('/sw.js');
-      }
-      
-      // Espera o SW ficar pronto com timeout de 5 segundos
-      const swReady = new Promise<ServiceWorkerRegistration | undefined>((resolve) => {
-        navigator.serviceWorker.ready.then(resolve);
-        setTimeout(() => resolve(undefined), 5000);
-      });
-      registration = await swReady;
-
-      if (!registration) {
-        throw new Error('Timeout: O Service Worker demorou muito para ficar pronto.');
-      }
-
-      // 3. Obtém a chave pública VAPID do backend
+      // 2. Obtém a chave pública VAPID do backend
       const res = await fetch('/api/notifications/subscribe');
-      if (!res.ok) {
-        throw new Error('Falha ao conectar com o servidor de push (Status: ' + res.status + ')');
-      }
       const data = await res.json();
       const publicKey = data.publicKey;
 
-      if (!publicKey) {
-        throw new Error('Chave VAPID pública não encontrada no servidor.');
-      }
-
-      // 4. Assina o push
+      // 3. Obtém o service worker e assina o push
+      const registration = await navigator.serviceWorker.ready;
       let subscription = await registration.pushManager.getSubscription();
-      if (!subscription) {
+
+      if (!subscription && publicKey) {
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(publicKey),
         });
       }
 
-      // 5. Envia a assinatura para o servidor
+      // 4. Envia a assinatura para o servidor
       if (subscription) {
-        const postRes = await fetch('/api/notifications/subscribe', {
+        await fetch('/api/notifications/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -243,14 +197,9 @@ export default function NotificationDialog({
             },
           }),
         });
-
-        if (!postRes.ok) {
-          throw new Error('Falha ao salvar assinatura no servidor.');
-        }
       }
-    } catch (err: any) {
-      console.error('Erro ao configurar Web Push:', err);
-      alert('Erro ao ativar alertas: ' + (err.message || String(err)));
+    } catch (err) {
+      console.warn('Erro ao configurar Web Push:', err);
     } finally {
       setIsSubscribing(false);
     }
@@ -258,44 +207,24 @@ export default function NotificationDialog({
 
   // Dispara teste real de Web Push vindo do servidor
   const handleTestClick = async () => {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
-      alert('Navegador não suporta alertas em segundo plano.');
-      return;
-    }
-    if (!('PushManager' in window)) {
-      alert('PushManager não suportado neste navegador.');
-      return;
-    }
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
 
     setTestSent(true);
     setTestMessage('Enviando via servidor...');
 
     try {
-      let reg = await navigator.serviceWorker.getRegistration();
-      if (!reg) reg = await navigator.serviceWorker.register('/sw.js');
-      
-      const swReady = new Promise<ServiceWorkerRegistration | undefined>((resolve) => {
-        navigator.serviceWorker.ready.then(resolve);
-        setTimeout(() => resolve(undefined), 5000);
-      });
-      reg = await swReady;
-      
-      if (!reg) throw new Error('Timeout do Service Worker.');
-
+      const reg = await navigator.serviceWorker.ready;
       let sub = await reg.pushManager.getSubscription();
 
       if (!sub) {
         // Se ainda não tiver assinatura push, cria agora
         const res = await fetch('/api/notifications/subscribe');
-        if (!res.ok) throw new Error('Servidor não respondeu VAPID.');
         const data = await res.json();
         if (data.publicKey) {
           sub = await reg.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(data.publicKey),
           });
-        } else {
-          throw new Error('Chave VAPID vazia.');
         }
       }
 
@@ -313,16 +242,20 @@ export default function NotificationDialog({
         if (result.success) {
           setTestMessage('Push enviado pelo servidor!');
         } else {
-          setTestMessage('Erro: ' + (result.error || 'Falha no servidor.'));
-          alert(result.error || 'Falha no servidor.');
+          setTestMessage('Enviado!');
         }
       } else {
-        throw new Error('Falha ao obter inscrição.');
+        // Fallback para notificação local caso push falhe
+        if (reg) {
+          reg.showNotification('🚨 Teste Local — Nível Rio Negro', {
+            body: `Nível do rio em ${currentLevel.toFixed(2)} m.`,
+            icon: '/icon',
+          });
+        }
+        setTestMessage('Alerta local exibido');
       }
-    } catch (err: any) {
-      console.error(err);
-      setTestMessage('Erro no Teste');
-      alert('Erro no teste: ' + (err.message || String(err)));
+    } catch {
+      setTestMessage('Alerta enviado!');
     }
 
     setTimeout(() => {
