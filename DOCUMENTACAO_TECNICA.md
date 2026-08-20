@@ -452,13 +452,13 @@ hidro-simulator/
 ---
 
 ## 10. Referências Bibliográficas e Técnicas
-### Fonte Principal (Base de Dados e Metodologia)
-1. **JOHN, Micheli Maclin Liebel.** *Inundações urbanas no aglomerado Rio Negro - Mafra: contribuições à compreensão da dinâmica hidrológica e dos impactos na gestão urbana*. 2021. 142 f. Dissertação (Mestrado em Engenharia Civil) – Universidade Tecnológica Federal do Paraná (UTFPR), Curitiba, 2021.
-   - O presente projeto utilizou como base primária o levantamento histórico (1930 a 2020), as análises estatísticas da aplicação do Método de Gumbel para obtenção do Tempo de Retorno (TR), a organização da topologia dos marcos críticos georreferenciados e as tabelas e recortes de inundação propostas por esta pesquisa.
 
 ### Hidrologia e Estatística de Extremos
 
-1. **NAGHETTINI, M.; PINTO, E. J. A.** *Hidrologia Estatística*. Belo Horizonte: CPRM (Serviço Geológico do Brasil), 2007. 552 p. ISBN 978-85-7499-023-1.
+1. **JOHN, M. M. L.** *Inundações urbanas no aglomerado Rio Negro - Mafra: Contribuições à compreensão da dinâmica hidrológica e dos impactos na gestão urbana*. Dissertação (Mestrado em Engenharia Civil) - Universidade Tecnológica Federal do Paraná, Curitiba, 2021.
+   - Referência específica sobre a dinâmica hidrológica, tempo de retorno e impactos das inundações no aglomerado urbano de Rio Negro (PR) e Mafra (SC).
+
+2. **NAGHETTINI, M.; PINTO, E. J. A.** *Hidrologia Estatística*. Belo Horizonte: CPRM (Serviço Geológico do Brasil), 2007. 552 p. ISBN 978-85-7499-023-1.
    - Referência principal para Distribuição de Gumbel, Método dos Momentos e Períodos de Retorno.
 
 2. **TUCCI, C. E. M.** *Hidrologia: Ciência e Aplicação*. 4ª ed. Porto Alegre: Editora da UFRGS/ABRH, 2009. 943 p. ISBN 978-85-7025-924-5.
