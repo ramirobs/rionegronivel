@@ -161,9 +161,23 @@ export default function DashboardPage() {
 
     load();
     const interval = setInterval(load, 15 * 60 * 1000); // Atualiza a cada 15 minutos
+    
+    // Atualiza automaticamente quando o usuário voltar para o aplicativo (foco na tela)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isMounted) {
+        load();
+      }
+    };
+    
+    // Adiciona os ouvintes de evento
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleVisibilityChange);
+
     return () => {
       isMounted = false;
       clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleVisibilityChange);
     };
   }, [period]);
 
