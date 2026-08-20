@@ -205,9 +205,11 @@ O sistema gera automaticamente a tabela para os períodos padrão da hidrologia 
 
 Implementação em [statistics.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/statistics.ts#L225-L241) — função `generateReturnPeriodTable()`.
 
-### 4.7 Série Histórica de Máximas Anuais
+### 4.7 Série Histórica de Máximas Anuais e Tendência Hidrológica Recente
 
-O sistema extrai a máxima anual de cada ano da série histórica ([data-processing.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/data-processing.ts#L303-L340) — `getMaxByYear()`), filtrando preferencialmente dados a partir de **1990** para refletir alterações recentes no regime hidrológico da bacia.
+O sistema extrai a máxima anual de cada ano da série histórica ([data-processing.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/data-processing.ts#L303-L340) — `getMaxByYear()`). 
+
+Para os cálculos de probabilidade e Período de Retorno (Gumbel), o sistema **filtra e utiliza apenas os dados a partir de 1990**. Esta janela temporal (1990-2020) foi adotada especificamente para capturar a tendência hidrológica recente da bacia, que aponta para um aumento significativo na frequência de eventos de inundação de média e alta magnitude nas últimas três décadas, em comparação com a série histórica completa (1930-2020).
 
 Quando a série da ANA está indisponível, utiliza-se uma **série calibrada regionalmente** (2015–2025) com eventos registrados, incluindo a **enchente histórica de outubro/novembro de 2023** (cota máxima ≈ 14,00 m).
 
@@ -453,12 +455,14 @@ hidro-simulator/
 
 ## 10. Referências Bibliográficas e Técnicas
 
+### Fonte Principal (Base de Dados e Metodologia)
+
+1. **JOHN, Micheli Maclin Liebel.** *Inundações urbanas no aglomerado Rio Negro - Mafra: contribuições à compreensão da dinâmica hidrológica e dos impactos na gestão urbana*. 2021. 142 f. Dissertação (Mestrado em Engenharia Civil) – Universidade Tecnológica Federal do Paraná (UTFPR), Curitiba, 2021.
+   - O presente projeto utilizou como base primária o levantamento histórico (1930 a 2020), as análises estatísticas da aplicação do Método de Gumbel para obtenção do Tempo de Retorno (TR), a organização da topologia dos marcos críticos georreferenciados e as tabelas e recortes de inundação propostas por esta pesquisa.
+
 ### Hidrologia e Estatística de Extremos
 
-1. **JOHN, M. M. L.** *Inundações urbanas no aglomerado Rio Negro - Mafra: Contribuições à compreensão da dinâmica hidrológica e dos impactos na gestão urbana*. Dissertação (Mestrado em Engenharia Civil) - Universidade Tecnológica Federal do Paraná, Curitiba, 2021.
-   - Referência específica sobre a dinâmica hidrológica, tempo de retorno e impactos das inundações no aglomerado urbano de Rio Negro (PR) e Mafra (SC).
-
-2. **NAGHETTINI, M.; PINTO, E. J. A.** *Hidrologia Estatística*. Belo Horizonte: CPRM (Serviço Geológico do Brasil), 2007. 552 p. ISBN 978-85-7499-023-1.
+1. **NAGHETTINI, M.; PINTO, E. J. A.** *Hidrologia Estatística*. Belo Horizonte: CPRM (Serviço Geológico do Brasil), 2007. 552 p. ISBN 978-85-7499-023-1.
    - Referência principal para Distribuição de Gumbel, Método dos Momentos e Períodos de Retorno.
 
 2. **TUCCI, C. E. M.** *Hidrologia: Ciência e Aplicação*. 4ª ed. Porto Alegre: Editora da UFRGS/ABRH, 2009. 943 p. ISBN 978-85-7025-924-5.
