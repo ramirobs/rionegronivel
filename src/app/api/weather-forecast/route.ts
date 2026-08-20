@@ -57,6 +57,23 @@ export async function GET() {
       console.warn('[API weather-forecast] Telemetria ANA offline, usando cálculo com cota padrão:', e);
     }
 
+    let upstreamTrendRate = 0;
+    try {
+      // Importa dinamicamente a constante da estação a montante
+      const { UPSTREAM_STATION } = await import('@/lib/constants');
+      if (UPSTREAM_STATION && UPSTREAM_STATION.code) {
+        let upstreamData = await fetchTelemetricData(UPSTREAM_STATION.code, startStr, endStr);
+        if (upstreamData.length === 0) {
+           upstreamData = await fetchHistoricalData(UPSTREAM_STATION.code, '1', startStr, endStr);
+        }
+        const cleanedUpstream = cleanRiverData(upstreamData);
+        const upTrend = calculateTrend(cleanedUpstream);
+        upstreamTrendRate = upTrend ? upTrend.rateOfChange : 0;
+      }
+    } catch (e) {
+      console.warn('[API weather-forecast] Falha ao buscar dados a montante:', e);
+    }
+
     const cleanedRiver = cleanRiverData(rawData);
     const latestReading = getLatestReading(cleanedRiver);
     const trend = calculateTrend(cleanedRiver);
@@ -78,7 +95,9 @@ export async function GET() {
       currentLevel,
       trendRate,
       weatherData.daily,
-      recentRain24h
+      recentRain24h,
+      weatherData.currentSoilMoisture,
+      upstreamTrendRate
     );
 
     // 4. Monta a série temporal unificada para o gráfico (Passado observado + Ponto Hoje + Projeção Futura)

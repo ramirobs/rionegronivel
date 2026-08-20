@@ -66,20 +66,38 @@ export function calculateHydrologicalForecast(
   currentLevel: number,
   recentTrendRate: number, // m/h
   forecastDaily: DailyWeatherForecast[],
-  recentRain24h: number = 0
+  recentRain24h: number = 0,
+  soilMoisture: number = 0.25, // m³/m³
+  upstreamTrendRate: number = 0 // m/h (Estação a montante)
 ): HydrologicalProjectionResult {
   const safeCurrent = Math.max(1.0, isNaN(currentLevel) ? 4.5 : currentLevel);
   const nDays = forecastDaily.length;
+
+  // Ajusta o coeficiente de resposta da chuva com base na umidade do solo.
+  // Se o solo estiver muito seco (< 0.20), absorve mais.
+  // Se o solo estiver saturado (> 0.35), o escoamento é muito maior.
+  // Umidade média de 0.25 mantém o coeficiente base de 0.033.
+  const moistureMultiplier = Math.max(0.2, Math.min(2.0, (soilMoisture / 0.25) * (soilMoisture / 0.25)));
+  const adjustedRainCoef = RAIN_RESPONSE_COEFFICIENT * moistureMultiplier;
 
   // Calcula a matriz de contribuição de chuva por dia com retardo (convolução hidrológica)
   const rainContributions = new Array(nDays).fill(0);
 
   // Considera o efeito residual da chuva recente das últimas 24h
   if (recentRain24h > 5) {
-    rainContributions[0] += recentRain24h * 0.4 * RAIN_RESPONSE_COEFFICIENT;
+    rainContributions[0] += recentRain24h * 0.4 * adjustedRainCoef;
     if (nDays > 1) {
-      rainContributions[1] += recentRain24h * 0.2 * RAIN_RESPONSE_COEFFICIENT;
+      rainContributions[1] += recentRain24h * 0.2 * adjustedRainCoef;
     }
+  }
+
+  // Propagação da onda de cheia da estação a montante (routing geográfico).
+  // Se o rio estiver subindo forte lá em cima, essa água chegará aqui em 1 a 2 dias.
+  if (Math.abs(upstreamTrendRate) > 0.01 && nDays > 2) {
+    const dailyUpstreamVariation = upstreamTrendRate * 24; // Conversão m/h para m/dia
+    // A onda viaja e se atenua. O pico chega entre D+1 e D+2.
+    rainContributions[1] += dailyUpstreamVariation * 0.4;
+    rainContributions[2] += dailyUpstreamVariation * 0.3;
   }
 
   for (let i = 0; i < nDays; i++) {
@@ -90,7 +108,7 @@ export function calculateHydrologicalForecast(
     for (let w = 0; w < HYDROGRAPH_WEIGHTS.length; w++) {
       const targetDay = i + w;
       if (targetDay < nDays) {
-        rainContributions[targetDay] += effectiveRain * HYDROGRAPH_WEIGHTS[w] * RAIN_RESPONSE_COEFFICIENT;
+        rainContributions[targetDay] += effectiveRain * HYDROGRAPH_WEIGHTS[w] * adjustedRainCoef;
       }
     }
   }

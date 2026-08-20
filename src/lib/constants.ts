@@ -27,9 +27,21 @@ export const STATIONS = {
     city: 'Rio Negro',
     state: 'PR',
   },
+  // Estação a Montante (Upstream) - Exemplo: Piên / Cabeceiras
+  UPSTREAM_STATION: {
+    code: '65095000', // Código de exemplo para estação a montante
+    name: 'Rio Negro (Montante)',
+    river: 'Rio Negro',
+    type: 'fluviometric' as const,
+    lat: -26.15,
+    lon: -49.50,
+    city: 'Piên',
+    state: 'PR',
+  },
 } as const;
 
 export const PRIMARY_STATION = STATIONS.RIO_NEGRO_FLUV;
+export const UPSTREAM_STATION = STATIONS.UPSTREAM_STATION;
 
 // ----- Limiares de Risco (metros) -----
 

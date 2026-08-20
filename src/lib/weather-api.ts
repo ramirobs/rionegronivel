@@ -27,6 +27,7 @@ export interface WeatherForecastResponse {
   latitude: number;
   longitude: number;
   timezone: string;
+  currentSoilMoisture?: number; // m³/m³ (0.1 = dry, 0.5 = saturated)
   daily: DailyWeatherForecast[];
   hourly: HourlyWeatherForecast[];
   totalForecastRain7Days: number; // mm acumulado nos próximos 7 dias
@@ -196,7 +197,10 @@ export async function fetchWeatherForecast(
     'daily',
     'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max'
   );
-  url.searchParams.set('hourly', 'precipitation,precipitation_probability,temperature_2m');
+  url.searchParams.set(
+    'hourly',
+    'precipitation,precipitation_probability,temperature_2m,soil_moisture_7_to_28cm'
+  );
   url.searchParams.set('timezone', 'America/Sao_Paulo');
   url.searchParams.set('forecast_days', '7');
 
@@ -262,7 +266,14 @@ export async function fetchWeatherForecast(
     }
 
     const hourly: HourlyWeatherForecast[] = [];
+    let currentSoilMoisture = 0.25; // fallback average moisture
+
     if (data.hourly && data.hourly.time) {
+      if (data.hourly.soil_moisture_7_to_28cm && data.hourly.soil_moisture_7_to_28cm.length > 0) {
+        // Obter o primeiro valor de umidade do solo disponível
+        currentSoilMoisture = Number(data.hourly.soil_moisture_7_to_28cm[0]);
+      }
+
       for (let j = 0; j < Math.min(data.hourly.time.length, 72); j++) {
         hourly.push({
           time: data.hourly.time[j],
@@ -277,6 +288,7 @@ export async function fetchWeatherForecast(
       latitude: data.latitude,
       longitude: data.longitude,
       timezone: data.timezone,
+      currentSoilMoisture,
       daily,
       hourly,
       totalForecastRain7Days: Number(totalRain.toFixed(1)),
