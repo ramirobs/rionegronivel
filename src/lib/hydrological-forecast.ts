@@ -41,18 +41,23 @@ export interface HydrologicalProjectionResult {
 
 /**
  * Coeficiente de sensibilidade chuva-nível da bacia do Rio Negro (PR/SC):
- * ~25mm de chuva acumulada na cabeceira eleva o rio em cerca de ~0.85m a 1.15m.
+ * Calibrado a partir da mediana do Quadro 9 da dissertação (aproximadamente 0.033 m/mm).
  */
-const RAIN_RESPONSE_COEFFICIENT = 0.038; // ~0.95m para 25mm
+const RAIN_RESPONSE_COEFFICIENT = 0.033;
 
 /**
- * Kernel de propagação hidrológica (tempo de concentração da bacia de 24h a 48h):
- * Dia 0 (mesmo dia): 20% do impacto
- * Dia +1 (dia seguinte - pico na régua de Mafra/Rio Negro): 55%
- * Dia +2 (cauda do hidrograma): 20%
- * Dia +3 (recessão final): 5%
+ * Kernel de propagação hidrológica (tempo de concentração da bacia):
+ * O estudo (pág. 106) aponta que a ascensão dura em média 7 a 15 dias devido ao longo percurso e pouca declividade.
+ * Portanto, o pico do impacto de uma chuva ocorre ao longo de vários dias, não imediatamente.
+ * Dia 0 (mesmo dia): 5%
+ * Dia +1: 15%
+ * Dia +2: 25%
+ * Dia +3: 25%
+ * Dia +4: 15%
+ * Dia +5: 10%
+ * Dia +6: 5%
  */
-const HYDROGRAPH_WEIGHTS = [0.20, 0.55, 0.20, 0.05];
+const HYDROGRAPH_WEIGHTS = [0.05, 0.15, 0.25, 0.25, 0.15, 0.10, 0.05];
 
 /**
  * Calcula a projeção hidrológica contínua e a probabilidade de enchente para os próximos 7 dias.
@@ -130,9 +135,9 @@ export function calculateHydrologicalForecast(
     }
 
     // 1. Recessão natural do nível (perda por drenagem em direção à cota base)
-    // Calibrado com base no evento extremo de 2014: vazante mais acelerada em cotas altas
+    // O estudo indica que a dissipação é lenta (a recessão leva de 21 a 52 dias, sendo 4,41x mais lenta que a ascensão).
     const excessAboveBase = Math.max(0, runningLevel - BASELINE_RIVER_LEVEL);
-    const dailyRecession = excessAboveBase > 0 ? Math.min(2.00, excessAboveBase * 0.18 + 0.04) : 0;
+    const dailyRecession = excessAboveBase > 0 ? Math.min(0.50, excessAboveBase * 0.035 + 0.02) : 0;
 
     // 2. Acréscimo hidrológico da chuva prevista
     const inflowRise = rainContributions[i];
