@@ -11,6 +11,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  ReferenceArea,
   Legend,
 } from 'recharts';
 import { TrendingUp, TrendingDown, Minus, Info, Sparkles, CloudRain, AlertTriangle } from 'lucide-react';
@@ -264,6 +265,22 @@ export default function ForecastTrendChart({ data, projection }: ForecastTrendCh
                 label={<TodayBadge />}
               />
             )}
+
+            {/* Zonas de Perigo (Reference Areas) */}
+            <ReferenceArea
+              yAxisId="left"
+              y1={6}
+              y2={7}
+              fill="#f97316"
+              fillOpacity={0.05}
+            />
+            <ReferenceArea
+              yAxisId="left"
+              y1={7}
+              y2={15} // Teto do gráfico
+              fill="#ef4444"
+              fillOpacity={0.08}
+            />
 
             {/* Linhas de Referência de Risco da Defesa Civil */}
             <ReferenceLine

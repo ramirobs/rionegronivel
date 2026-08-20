@@ -14,6 +14,7 @@ import EmergencyContacts from '@/components/dashboard/emergency-contacts';
 import ForecastTrendChart from '@/components/dashboard/forecast-trend-chart';
 import ForecastDailyCards from '@/components/dashboard/forecast-daily-cards';
 import SkeletonDashboard from '@/components/dashboard/skeleton-dashboard';
+import { DynamicAlertBanner } from '@/components/dashboard/dynamic-alert-banner';
 import { classifyRisk, calculateExceedanceProbability } from '@/lib/statistics';
 import type { RiskLevel } from '@/lib/constants';
 import type { WeatherForecastResponse } from '@/lib/weather-api';
@@ -234,6 +235,14 @@ export default function DashboardPage() {
         onSelectTab={setActiveTab}
         riskLevel={riskLevel}
       />
+
+      <div className="mt-4 sm:mt-6">
+        <DynamicAlertBanner 
+          riskLevel={riskLevel} 
+          forecastMaxLevel={forecastData?.projection?.overallTrend?.maxProjectedLevel}
+          forecastPeakDate={forecastData?.projection?.overallTrend?.peakDate}
+        />
+      </div>
 
       {/* ========================================================================= */}
       {/* ABA 1: AO VIVO (MONITORAMENTO EM TEMPO REAL)                              */}
