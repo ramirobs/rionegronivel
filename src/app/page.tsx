@@ -369,6 +369,7 @@ export default function DashboardPage() {
                   { label: '30d', val: '30' },
                   { label: '90d', val: '90' },
                   { label: '180d', val: '180' },
+                  { label: '365d', val: '365' },
                 ].map((p) => (
                   <button
                     key={p.val}
