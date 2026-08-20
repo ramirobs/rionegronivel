@@ -98,8 +98,8 @@ export function calculateHydrologicalForecast(
   let maxFloodProb = 0;
   let maxAlertProb = 0;
 
-  // Nível de base de estiagem do Rio Negro
-  const BASELINE_RIVER_LEVEL = 3.80;
+  // Nível de base de estiagem do Rio Negro (calibrado conforme média histórica do IAT)
+  const BASELINE_RIVER_LEVEL = 1.63;
 
   for (let i = 0; i < nDays; i++) {
     const dayForecast = forecastDaily[i];
@@ -130,8 +130,9 @@ export function calculateHydrologicalForecast(
     }
 
     // 1. Recessão natural do nível (perda por drenagem em direção à cota base)
+    // Calibrado com base no evento extremo de 2014: vazante mais acelerada em cotas altas
     const excessAboveBase = Math.max(0, runningLevel - BASELINE_RIVER_LEVEL);
-    const dailyRecession = excessAboveBase > 0 ? Math.min(0.28, excessAboveBase * 0.09 + 0.04) : 0;
+    const dailyRecession = excessAboveBase > 0 ? Math.min(2.00, excessAboveBase * 0.18 + 0.04) : 0;
 
     // 2. Acréscimo hidrológico da chuva prevista
     const inflowRise = rainContributions[i];
