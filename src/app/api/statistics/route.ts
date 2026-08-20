@@ -64,8 +64,17 @@ export async function GET() {
       if (cleanData.length > 50) {
         const annualMaxObjs: AnnualMax[] = getMaxByYear(cleanData);
 
+        // Filtra a série para utilizar apenas dados a partir de 1990, 
+        // conforme estudo hidrológico que demonstra aumento da frequência de inundações
+        const recentMaxima = annualMaxObjs.filter(item => item.year >= 1990);
+
         // Requer pelo menos 5 anos distintos para que o ajuste de Gumbel tenha significância estatística
-        if (annualMaxObjs.length >= 5) {
+        if (recentMaxima.length >= 5) {
+          annualMaximaList = recentMaxima.map((item) => ({
+            year: item.year,
+            maxLevel: item.maxLevel,
+          }));
+        } else if (annualMaxObjs.length >= 5) {
           annualMaximaList = annualMaxObjs.map((item) => ({
             year: item.year,
             maxLevel: item.maxLevel,

@@ -452,6 +452,9 @@ hidro-simulator/
 ---
 
 ## 10. Referências Bibliográficas e Técnicas
+### Fonte Principal (Base de Dados e Metodologia)
+1. **JOHN, Micheli Maclin Liebel.** *Inundações urbanas no aglomerado Rio Negro - Mafra: contribuições à compreensão da dinâmica hidrológica e dos impactos na gestão urbana*. 2021. 142 f. Dissertação (Mestrado em Engenharia Civil) – Universidade Tecnológica Federal do Paraná (UTFPR), Curitiba, 2021.
+   - O presente projeto utilizou como base primária o levantamento histórico (1930 a 2020), as análises estatísticas da aplicação do Método de Gumbel para obtenção do Tempo de Retorno (TR), a organização da topologia dos marcos críticos georreferenciados e as tabelas e recortes de inundação propostas por esta pesquisa.
 
 ### Hidrologia e Estatística de Extremos
 
