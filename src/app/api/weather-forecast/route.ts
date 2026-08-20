@@ -212,6 +212,8 @@ export async function GET() {
       projection,
       chartData,
       currentLevel,
+      upstreamTrendRate,
+      soilMoisture: weatherData.currentSoilMoisture,
       lastUpdated: new Date().toISOString(),
     });
   } catch (error) {

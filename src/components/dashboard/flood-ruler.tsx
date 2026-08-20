@@ -25,30 +25,30 @@ export default function FloodRuler({ currentLevel, trend }: FloodRulerProps) {
       label: '8,50 m',
       name: 'Enchente Grave',
       status: 'Crítico',
-      desc: 'Pontes bloqueadas, vias centrais submersas (ex: 2022).',
+      desc: 'Água avança para o Centro de Rio Negro e Vila Ivete (Mafra).',
       colorHex: '#dc2626', // red-600
       badgeColor: 'bg-red-200 text-red-900 border-red-400',
-      impact: 'Bloqueio total de travessia Rio Negro ⇄ Mafra.',
+      impact: 'Bloqueio total de travessias e resgate por barcos.',
     },
     {
       level: 7.0,
       label: '7,00 m',
-      name: 'Residências Atingidas',
+      name: 'Alagamento Residencial',
       status: 'Enchente',
-      desc: 'Água invade casas e comércios em Mafra e Rio Negro.',
+      desc: 'Água invade casas na Vila Argentina (Mafra) e Vila Paraíso (Rio Negro).',
       colorHex: '#f43f5e', // rose-500
       badgeColor: 'bg-rose-100 text-rose-800 border-rose-300',
-      impact: 'Famílias ribeirinhas devem evacuar imediatamente.',
+      impact: 'Famílias dos bairros ribeirinhos devem ser realocadas.',
     },
     {
       level: 6.0,
       label: '6,00 m',
-      name: 'Cota de Alerta',
+      name: 'Transbordamento',
       status: 'Alerta',
-      desc: 'Várzeas alagam. Entorno da Ponte Metálica em vigilância.',
+      desc: 'Várzeas e parques alagam. Água atinge a Praça do Mafrense.',
       colorHex: '#f97316', // orange-500
       badgeColor: 'bg-orange-100 text-orange-800 border-orange-300',
-      impact: 'Trânsito pode ser desviado em ruas baixas.',
+      impact: 'Fechamento de ruas adjacentes à orla.',
     },
     {
       level: 5.0,

@@ -15,6 +15,7 @@ import ForecastTrendChart from '@/components/dashboard/forecast-trend-chart';
 import ForecastDailyCards from '@/components/dashboard/forecast-daily-cards';
 import SkeletonDashboard from '@/components/dashboard/skeleton-dashboard';
 import { DynamicAlertBanner } from '@/components/dashboard/dynamic-alert-banner';
+import AggravatingFactorsCard from '@/components/dashboard/aggravating-factors-card';
 import { classifyRisk, calculateExceedanceProbability } from '@/lib/statistics';
 import type { RiskLevel } from '@/lib/constants';
 import type { WeatherForecastResponse } from '@/lib/weather-api';
@@ -68,6 +69,8 @@ interface ForecastApiResponse {
   projection: HydrologicalProjectionResult;
   chartData: CombinedChartPoint[];
   currentLevel: number;
+  upstreamTrendRate?: number;
+  soilMoisture?: number;
   lastUpdated: string;
 }
 
@@ -318,6 +321,13 @@ export default function DashboardPage() {
               <ForecastTrendChart
                 data={forecastData.chartData}
                 projection={forecastData.projection}
+              />
+
+              {/* Fatores Agravantes do Modelo */}
+              <AggravatingFactorsCard 
+                precip7Days={forecastData.weather.totalForecastRain7Days}
+                soilMoisture={forecastData.soilMoisture}
+                upstreamTrendRate={forecastData.upstreamTrendRate}
               />
 
               {/* Cards Diários com Clima e Nível Projetado */}
