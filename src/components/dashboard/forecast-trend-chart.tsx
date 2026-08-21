@@ -356,7 +356,10 @@ export default function ForecastTrendChart({ data, projection, title, subtitle }
               stroke="#0284c7"
               strokeWidth={3}
               dot={{ r: 3, fill: '#0284c7' }}
-              activeDot={{ r: 6, fill: '#0284c7', stroke: '#ffffff', strokeWidth: 2 }}
+              activeDot={(props: any) => {
+                if (props.payload.observedLevel == null) return <g />;
+                return <circle cx={props.cx} cy={props.cy} r={6} fill="#0284c7" stroke="#ffffff" strokeWidth={2} />;
+              }}
               connectNulls={true}
             />
 
@@ -370,7 +373,10 @@ export default function ForecastTrendChart({ data, projection, title, subtitle }
               strokeWidth={3}
               strokeDasharray="6 4"
               dot={{ r: 4, fill: '#2563eb', stroke: '#ffffff', strokeWidth: 2 }}
-              activeDot={{ r: 6, fill: '#2563eb', stroke: '#ffffff', strokeWidth: 2 }}
+              activeDot={(props: any) => {
+                if (props.payload.expectedLevel == null) return <g />;
+                return <circle cx={props.cx} cy={props.cy} r={6} fill="#2563eb" stroke="#ffffff" strokeWidth={2} />;
+              }}
               connectNulls={true}
             />
 
