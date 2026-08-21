@@ -1,5 +1,4 @@
 'use client';
-import React from 'react';
 
 import {
   ComposedChart,
@@ -24,58 +23,7 @@ interface ForecastTrendChartProps {
   projection: HydrologicalProjectionResult;
   title?: string;
   subtitle?: string;
-  extraHeader?: React.ReactNode;
-}
-
-function LiveTickerDot(props: any) {
-  const { cx, cy, payload, chartData } = props;
-  const [liveValue, setLiveValue] = React.useState(payload.level);
-
-  React.useEffect(() => {
-    const idx = chartData.findIndex((d: any) => d.dateFormatted === 'Agora');
-    const nextPoint = chartData[idx + 1];
-    
-    if (!nextPoint) return;
-    
-    const diff = nextPoint.level - payload.level;
-    const msPerUpdate = 100; // 10 ticks per second is very satisfying
-    const diffPerUpdate = diff / (900000 / msPerUpdate); // 15 minutos = 900.000 ms
-    
-    const interval = setInterval(() => {
-      setLiveValue((prev: number) => prev + diffPerUpdate);
-    }, msPerUpdate);
-
-    return () => clearInterval(interval);
-  }, [payload.level, chartData]);
-
-  const idx = chartData.findIndex((d: any) => d.dateFormatted === 'Agora');
-  const nextPoint = chartData[idx + 1];
-  const isRising = nextPoint && nextPoint.level > payload.level;
-  const isFalling = nextPoint && nextPoint.level < payload.level;
-  const arrow = isRising ? '▲' : isFalling ? '▼' : '';
-  const arrowColor = isRising ? '#ef4444' : isFalling ? '#22c55e' : '#94a3b8';
-
-  return (
-    <g>
-      <circle cx={cx} cy={cy} r={12} fill="#3b82f6" opacity={0.6} className="animate-ping" style={{ transformOrigin: `${cx}px ${cy}px` }} />
-      <circle cx={cx} cy={cy} r={5} fill="#2563eb" stroke="#ffffff" strokeWidth={2} />
-      
-      {/* Ticker HUD */}
-      <g transform={`translate(${cx}, ${cy - 28})`}>
-        <rect x={-36} y={-11} width={72} height={20} rx={10} fill="#0f172a" stroke="#334155" strokeWidth={1} opacity={0.9} />
-        
-        <text x={2} y={3} textAnchor="middle" fill="#f8fafc" fontSize={10} fontWeight={800} alignmentBaseline="middle" fontFamily="monospace">
-          {liveValue.toFixed(5)}m
-        </text>
-        
-        {arrow && (
-          <text x={-26} y={3} textAnchor="middle" fill={arrowColor} fontSize={7} fontWeight={900} alignmentBaseline="middle">
-            {arrow}
-          </text>
-        )}
-      </g>
-    </g>
-  );
+  rightAction?: React.ReactNode;
 }
 
 function TodayBadge(props: { viewBox?: { x?: number; y?: number } }) {
@@ -106,7 +54,7 @@ function TodayBadge(props: { viewBox?: { x?: number; y?: number } }) {
   );
 }
 
-export default function ForecastTrendChart({ data, projection, title, subtitle, extraHeader }: ForecastTrendChartProps) {
+export default function ForecastTrendChart({ data, projection, title, subtitle, rightAction }: ForecastTrendChartProps) {
   const trend = projection.overallTrend;
   const isRising = trend.direction === 'rising';
   const isFalling = trend.direction === 'falling';
@@ -133,14 +81,9 @@ export default function ForecastTrendChart({ data, projection, title, subtitle, 
           </p>
         </div>
 
-        {/* Lado Direito do Cabeçalho */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 self-start sm:self-center">
-          {extraHeader && (
-            <div className="mr-0 sm:mr-2">
-              {extraHeader}
-            </div>
-          )}
-
+        {/* Badge de Tendência Geral e Filtros */}
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-center">
+          {rightAction && <div>{rightAction}</div>}
           <div
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-black shadow-2xs ${
               isRising
@@ -414,13 +357,7 @@ export default function ForecastTrendChart({ data, projection, title, subtitle, 
               name="Nível Observado (m)"
               stroke="#0284c7"
               strokeWidth={3}
-              dot={(props: any) => {
-                const { cx, cy, payload } = props;
-                if (!cx || !cy) return <g key={props.key || Math.random()} />;
-                if (payload.dateFormatted === 'Agora') return <g key={props.key || 'agora'} />; // Deixa pro expectedLevel desenhar o Agora
-                if (data.length <= 30) return <circle key={props.key || Math.random()} cx={cx} cy={cy} r={4} fill="#0284c7" stroke="#ffffff" strokeWidth={2} />;
-                return <g key={props.key || Math.random()} />;
-              }}
+              dot={{ r: 3, fill: '#0284c7' }}
               activeDot={(props: any) => {
                 if (props.payload.observedLevel == null) return <g />;
                 return <circle cx={props.cx} cy={props.cy} r={6} fill="#0284c7" stroke="#ffffff" strokeWidth={2} />;
@@ -437,20 +374,7 @@ export default function ForecastTrendChart({ data, projection, title, subtitle, 
               stroke="#2563eb"
               strokeWidth={3}
               strokeDasharray="6 4"
-              dot={(props: any) => {
-                const { cx, cy, payload, key } = props;
-                if (!cx || !cy) return <g key={key || Math.random()} />;
-                if (payload.dateFormatted === 'Agora') {
-                  return (
-                    <g key={key || 'agora'}>
-                      <circle cx={cx} cy={cy} r={12} fill="#3b82f6" opacity={0.6} className="animate-ping" style={{ transformOrigin: `${cx}px ${cy}px` }} />
-                      <circle cx={cx} cy={cy} r={5} fill="#2563eb" stroke="#ffffff" strokeWidth={2} />
-                    </g>
-                  );
-                }
-                if (data.length <= 30) return <circle key={key || Math.random()} cx={cx} cy={cy} r={4} fill="#2563eb" stroke="#ffffff" strokeWidth={2} />;
-                return <g key={key || Math.random()} />;
-              }}
+              dot={{ r: 4, fill: '#2563eb', stroke: '#ffffff', strokeWidth: 2 }}
               activeDot={(props: any) => {
                 if (props.payload.expectedLevel == null) return <g />;
                 return <circle cx={props.cx} cy={props.cy} r={6} fill="#2563eb" stroke="#ffffff" strokeWidth={2} />;

@@ -83,32 +83,10 @@ export default function DashboardPage() {
   const [statsData, setStatsData] = useState<StatsResponse | null>(null);
   const [forecastData, setForecastData] = useState<ForecastApiResponse | null>(null);
   const [period, setPeriod] = useState('7');
+  const [hourlyFilter, setHourlyFilter] = useState<'day' | '12' | '24' | '48'>('day');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastFetch, setLastFetch] = useState<string>('');
-  const [hourlyView, setHourlyView] = useState<'day' | '12h' | '24h' | '48h'>('day');
-
-  const filteredHourlyData = useCallback(() => {
-    if (!forecastData?.hourlyChartData) return [];
-    
-    if (hourlyView === '48h') return forecastData.hourlyChartData;
-    if (hourlyView === '12h') return forecastData.hourlyChartData.slice(0, 12 * 4 + 1);
-    if (hourlyView === '24h') return forecastData.hourlyChartData.slice(0, 24 * 4 + 1);
-    
-    // 'day' -> Restante do dia de hoje (até 23:00)
-    if (hourlyView === 'day') {
-       // Pega o dia do ponto "Agora"
-       const nowIso = forecastData.hourlyChartData[0]?.date || new Date().toISOString();
-       const todayDateStr = nowIso.split('T')[0];
-       
-       const endIdx = forecastData.hourlyChartData.findIndex((d, idx) => idx > 0 && !d.date.startsWith(todayDateStr));
-       
-       if (endIdx === -1) return forecastData.hourlyChartData; 
-       return forecastData.hourlyChartData.slice(0, endIdx);
-    }
-    
-    return forecastData.hourlyChartData;
-  }, [forecastData, hourlyView]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -251,6 +229,26 @@ export default function DashboardPage() {
     ? calculateExceedanceProbability(7.0, statsData.gumbelParams) * 100
     : 0;
 
+  // Filtra o gráfico horário com base na seleção
+  const filteredHourlyData = (() => {
+    if (!forecastData?.hourlyChartData) return [];
+    const allData = forecastData.hourlyChartData;
+    if (hourlyFilter === '48') return allData;
+    
+    if (hourlyFilter === 'day') {
+      // Pega apenas os pontos que caem no mesmo dia de hoje
+      const todayStr = new Date().toISOString().split('T')[0];
+      const todayData = allData.filter(d => d.date.startsWith(todayStr));
+      // Garante que o gráfico nunca fique vazio ou com apenas 1 ponto se for fim do dia
+      return todayData.length > 2 ? todayData : allData.slice(0, 12);
+    }
+
+    if (hourlyFilter === '12') return allData.slice(0, 13);
+    if (hourlyFilter === '24') return allData.slice(0, 25);
+    
+    return allData;
+  })();
+
   if (loading) {
     return <SkeletonDashboard />;
   }
@@ -342,27 +340,27 @@ export default function DashboardPage() {
 
           {forecastData && forecastData.success ? (
             <>
-              {/* Gráfico de Previsão Horária */}
+              {/* Gráfico de Previsão Horária com Filtros */}
               <ForecastTrendChart
-                data={filteredHourlyData()}
+                data={filteredHourlyData}
                 projection={forecastData.projection}
-                title="Previsão Contínua de Nível (Horária)"
-                subtitle="Evolução suave do nível hora-a-hora para o curto prazo"
-                extraHeader={
-                  <div className="inline-flex bg-slate-200/80 p-1 rounded-xl shadow-xs">
+                title="Previsão Contínua (Curto Prazo)"
+                subtitle="Evolução suave do nível hora-a-hora"
+                rightAction={
+                  <div className="inline-flex bg-slate-100 p-1 rounded-xl shadow-xs border border-slate-200">
                     {[
                       { label: 'Hoje', val: 'day' },
-                      { label: '+12h', val: '12h' },
-                      { label: '+24h', val: '24h' },
-                      { label: '+48h', val: '48h' },
+                      { label: '+12h', val: '12' },
+                      { label: '+24h', val: '24' },
+                      { label: '+48h', val: '48' },
                     ].map((p) => (
                       <button
                         key={p.val}
-                        onClick={() => setHourlyView(p.val as 'day' | '12h' | '24h' | '48h')}
-                        className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                          hourlyView === p.val
+                        onClick={() => setHourlyFilter(p.val as any)}
+                        className={`px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                          hourlyFilter === p.val
                             ? 'bg-white text-blue-700 shadow-xs'
-                            : 'text-slate-600 hover:text-slate-900'
+                            : 'text-slate-500 hover:text-slate-800'
                         }`}
                       >
                         {p.label}
