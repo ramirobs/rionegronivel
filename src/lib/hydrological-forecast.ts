@@ -170,19 +170,31 @@ export function calculateHydrologicalForecast(
       continue;
     }
 
-    // 1. Recessão natural do nível (perda por drenagem em direção à cota base)
-    // O estudo indica que a dissipação é lenta (a recessão leva de 21 a 52 dias, sendo 4,41x mais lenta que a ascensão).
-    const excessAboveBase = Math.max(0, runningLevel - BASELINE_RIVER_LEVEL);
-    const dailyRecession = excessAboveBase > 0 ? Math.min(0.50, excessAboveBase * 0.035 + 0.02) : 0;
+    // 1. Inércia real do rio baseada na tendência recente (m/dia)
+    const actualDailyTrend = recentTrendRate * 24;
 
-    // 2. Acréscimo hidrológico da chuva prevista
+    // 2. Recessão natural teórica (quanto o rio deveria cair por escoamento)
+    const excessAboveBase = Math.max(0, runningLevel - BASELINE_RIVER_LEVEL);
+    const theoreticalRecession = excessAboveBase > 0 ? Math.min(0.50, excessAboveBase * 0.035 + 0.02) : 0;
+    const theoreticalTrend = -theoreticalRecession; // Tendência teórica é sempre negativa (esvaziamento)
+
+    // 3. Suavização (Decaimento Exponencial)
+    // O peso da inércia real começa alto no dia 1 e decai para dar lugar à física teórica nos dias seguintes
+    const inertiaWeight = Math.pow(0.65, i); 
+    
+    // Mescla a tendência real com a tendência teórica
+    let baseDailyChange = (actualDailyTrend * inertiaWeight) + (theoreticalTrend * (1 - inertiaWeight));
+
+    // Proteção: se a tendência real for uma subida muito abrupta e não há chuva nova, ela deve decair mais rápido
+    if (actualDailyTrend > 0 && rainContributions[i] === 0) {
+      baseDailyChange = Math.min(baseDailyChange, actualDailyTrend * Math.pow(0.4, i));
+    }
+
+    // 4. Acréscimo hidrológico da chuva prevista para hoje
     const inflowRise = rainContributions[i];
 
-    // 3. Efeito da inércia da taxa de variação recente no primeiro dia de projeção
-    const inertia = i === 1 ? Math.max(-0.15, Math.min(0.25, recentTrendRate * 12)) : 0;
-
     // Novo nível esperado
-    runningLevel = Math.max(BASELINE_RIVER_LEVEL, runningLevel - dailyRecession + inflowRise + inertia);
+    runningLevel = Math.max(BASELINE_RIVER_LEVEL, runningLevel + baseDailyChange + inflowRise);
     const expected = Number(runningLevel.toFixed(2));
 
     // Margem de incerteza (cresce com o horizonte temporal)
