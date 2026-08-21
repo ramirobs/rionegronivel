@@ -6,10 +6,11 @@ import {
   CloudRain,
   BarChart3,
   ShieldAlert,
+  Map as MapIcon,
 } from 'lucide-react';
 import type { RiskLevel } from '@/lib/constants';
 
-export type TabId = 'live' | 'forecast' | 'history' | 'emergency';
+export type TabId = 'live' | 'forecast' | 'map' | 'history' | 'emergency';
 
 interface NavigationTabsProps {
   activeTab: TabId;
@@ -45,6 +46,12 @@ export default function NavigationTabs({
       label: 'Previsão 7 Dias',
       shortLabel: 'Previsão',
       icon: CloudRain,
+    },
+    {
+      id: 'map',
+      label: 'Mapa de Inundação',
+      shortLabel: 'Mapa',
+      icon: MapIcon,
     },
     {
       id: 'history',

@@ -17,12 +17,13 @@ import SkeletonDashboard from '@/components/dashboard/skeleton-dashboard';
 import { DynamicAlertBanner } from '@/components/dashboard/dynamic-alert-banner';
 import AggravatingFactorsCard from '@/components/dashboard/aggravating-factors-card';
 import ImpactTimeline from '@/components/dashboard/impact-timeline';
+import FloodMap from '@/components/dashboard/flood-map';
 import { classifyRisk, calculateExceedanceProbability } from '@/lib/statistics';
 import type { RiskLevel } from '@/lib/constants';
 import type { WeatherForecastResponse } from '@/lib/weather-api';
 import type { HydrologicalProjectionResult } from '@/lib/hydrological-forecast';
 import type { CombinedChartPoint } from '@/app/api/weather-forecast/route';
-import { CloudRain, BarChart3, ShieldAlert, Sparkles } from 'lucide-react';
+import { CloudRain, BarChart3, ShieldAlert, Sparkles, Map as MapIcon } from 'lucide-react';
 
 interface RiverDataPoint {
   date: string;
@@ -373,6 +374,31 @@ export default function DashboardPage() {
         </div>
       )}
 
+
+      {/* ========================================================================= */}
+      {/* ABA 3: MAPA DE INUNDAÇÃO (SIMULADOR)                                      */}
+      {/* ========================================================================= */}
+      {activeTab === 'map' && (
+        <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-200">
+          <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-sky-600 rounded-2xl p-4 sm:p-6 text-white shadow-md">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-white/20 backdrop-blur-md rounded-xl">
+                <MapIcon className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-base sm:text-lg font-bold">
+                  Mapa Interativo de Inundação
+                </h2>
+                <p className="text-xs sm:text-sm text-blue-100 mt-0.5">
+                  Simule cenários de elevação do rio e veja as manchas de alagamento.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <FloodMap currentLevel={currentLevel} />
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* ABA 4: HISTÓRICO & DADOS ESTATÍSTICOS                                     */}
