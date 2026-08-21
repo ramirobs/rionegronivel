@@ -327,7 +327,7 @@ export default function DashboardPage() {
               <AggravatingFactorsCard 
                 precip7Days={forecastData.weather.totalForecastRain7Days}
                 soilMoisture={forecastData.soilMoisture}
-                upstreamTrendRate={forecastData.upstreamTrendRate}
+                riverTrendRate={trend.rate}
               />
 
               {/* Cards Diários com Clima e Nível Projetado */}

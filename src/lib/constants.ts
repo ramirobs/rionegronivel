@@ -27,31 +27,9 @@ export const STATIONS = {
     city: 'Rio Negro',
     state: 'PR',
   },
-  // Estações nas Cabeceiras / Montante (Fragosos - Piên / PR)
-  UPSTREAM_STATION: {
-    code: '65090000', // Estação Fluviométrica Fragosos (Piên / Campo Alegre)
-    name: 'Fragosos (Piên)',
-    river: 'Rio Negro',
-    type: 'fluviometric' as const,
-    lat: -26.1547,
-    lon: -49.3806,
-    city: 'Piên',
-    state: 'PR',
-  },
-  FRAGOSOS_PLUV: {
-    code: '02649018', // Estação Pluviométrica Fragosos
-    name: 'Fragosos',
-    river: 'Rio Negro',
-    type: 'pluviometric' as const,
-    lat: -26.1547,
-    lon: -49.3806,
-    city: 'Piên',
-    state: 'PR',
-  },
 } as const;
 
 export const PRIMARY_STATION = STATIONS.RIO_NEGRO_FLUV;
-export const UPSTREAM_STATION = STATIONS.UPSTREAM_STATION;
 
 // ----- Limiares de Risco (metros) -----
 
