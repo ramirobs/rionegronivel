@@ -92,8 +92,8 @@ export default function DashboardPage() {
     if (!forecastData?.hourlyChartData) return [];
     
     if (hourlyView === '48h') return forecastData.hourlyChartData;
-    if (hourlyView === '12h') return forecastData.hourlyChartData.slice(0, 13);
-    if (hourlyView === '24h') return forecastData.hourlyChartData.slice(0, 25);
+    if (hourlyView === '12h') return forecastData.hourlyChartData.slice(0, 12 * 4 + 1);
+    if (hourlyView === '24h') return forecastData.hourlyChartData.slice(0, 24 * 4 + 1);
     
     // 'day' -> Restante do dia de hoje (até 23:00)
     if (hourlyView === 'day') {

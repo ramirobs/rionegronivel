@@ -208,19 +208,48 @@ export async function GET() {
     });
 
     if (projection.projectedHours && projection.projectedHours.length > 0) {
-      for (const h of projection.projectedHours) {
-        // Ignora a hora '0' se já estivermos no agora, ou apenas insere normalmente
-        hourlyChartData.push({
-          date: h.time,
-          dateFormatted: h.timeFormatted, // ex: '14:00'
-          isObserved: false,
-          isForecast: true,
-          expectedLevel: h.expectedLevel,
-          minLevel: h.minLevel,
-          maxLevel: h.maxLevel,
-          level: h.expectedLevel,
-          rain: h.forecastRain,
-        });
+      let prevLevel = currentLevel;
+      let prevMin = currentLevel;
+      let prevMax = currentLevel;
+      
+      // O time base do 'Agora' é a hora atual cheia (para a primeira interpolação)
+      let prevTime = new Date();
+      prevTime.setMinutes(0, 0, 0);
+
+      for (let i = 0; i < projection.projectedHours.length; i++) {
+        const h = projection.projectedHours[i];
+        const currentTargetTime = new Date(h.time);
+        
+        // Se for o primeiro ponto (index 0) e bater com a hora atual, pula
+        // Mas para manter simples, vamos sempre interpolar entre prev e o current.
+        const steps = 4; // 15 minutos (00, 15, 30, 45)
+        
+        for (let step = 1; step <= steps; step++) {
+          const fraction = step / steps;
+          const interpLevel = prevLevel + (h.expectedLevel - prevLevel) * fraction;
+          const interpMin = prevMin + (h.minLevel - prevMin) * fraction;
+          const interpMax = prevMax + (h.maxLevel - prevMax) * fraction;
+          
+          const interpTime = new Date(prevTime.getTime() + (currentTargetTime.getTime() - prevTime.getTime()) * fraction);
+          const timeFormatted = `${String(interpTime.getHours()).padStart(2, '0')}:${String(interpTime.getMinutes()).padStart(2, '0')}`;
+
+          hourlyChartData.push({
+            date: interpTime.toISOString(),
+            dateFormatted: timeFormatted,
+            isObserved: false,
+            isForecast: true,
+            expectedLevel: Number(interpLevel.toFixed(2)),
+            minLevel: Number(interpMin.toFixed(2)),
+            maxLevel: Number(interpMax.toFixed(2)),
+            level: Number(interpLevel.toFixed(2)),
+            rain: step === steps ? h.forecastRain : 0, 
+          });
+        }
+        
+        prevLevel = h.expectedLevel;
+        prevMin = h.minLevel;
+        prevMax = h.maxLevel;
+        prevTime = currentTargetTime;
       }
     }
 
