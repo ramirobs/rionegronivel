@@ -25,13 +25,12 @@ O sistema integra múltiplas estações da bacia hidrográfica do Rio Negro para
 
 | Estação | Código ANA | Rio | Município / UF | Coordenadas | Função no Sistema |
 |---|---|---|---|---|---|
-| **Rio Negro (Principal)** | `65100001` | Rio Negro | Rio Negro – PR | -26.1114°S, -49.8044°W | Referência de nível e vazão urbana (Mafra/Rio Negro) |
-| **Fragosos (Montante)** | `65090000` | Rio Negro | Piên – PR | -26.1547°S, -49.3806°W | Sensor de antecedência de cheias nas cabeceiras |
-| **Fragosos (Pluviométrica)**| `02649018` | Rio Negro | Piên – PR | -26.1547°S, -49.3806°W | Medição de precipitação nas cabeceiras |
+| **Rio Negro (Principal)** | `65100001` | Rio Negro | Rio Negro – PR | -26.1114°S, -49.8044°W | Referência telemétrica de nível e vazão urbana (Mafra/Rio Negro) |
 | **Rio Negro (Pluviométrica)**| `02649006` | Rio Negro | Rio Negro – PR | -26.1000°S, -49.8000°W | Medição local de precipitação pluviométrica |
+| **Rio Negro (Convencional Histórica)**| `65100000` | Rio Negro | Rio Negro – PR | -26.1114°S, -49.8044°W | Série histórica de longo prazo (1930–2020) para Gumbel |
 
 > [!NOTE]
-> A estação principal `65100001` é a referência oficial para a régua urbana de Mafra e Rio Negro. A estação fluviométrica `65090000` (Fragosos / Piên) monitora as cabeceiras da bacia a montante, antecipando ondas de cheia que levam de 24h a 48h para chegar à área urbana. Dados históricos de longo prazo (1930–2020) utilizam também os registros da estação convencional `65100000`.
+> A estação telemétrica principal `65100001` é a referência oficial em tempo real para a régua urbana de Mafra e Rio Negro. A dinâmica hidrológica a montante e o tempo de propagação (tempo de concentração de 7 a 15 dias) são modelados via previsão espacial de chuva e saturação do solo (Open-Meteo) convoluídos com o kernel de resposta da bacia.
 
 ---
 
@@ -44,12 +43,12 @@ graph TD
     D["Open-Meteo API"] -->|"Previsão 7d + Umidade do Solo"| E["Cliente weather-api.ts"]
     F["SNIRH Hidrotelemetria"] -->|"Scraping XLS"| G["Script baixar_snirh.py"]
 
-    B -->|"Telemetria Rio Negro + Piên"| H["data-processing.ts"]
+    B -->|"Telemetria Rio Negro"| H["data-processing.ts"]
     H -->|"Limpeza e Tendência Recente"| I["API Routes (Next.js)"]
     E --> I
     H --> J["statistics.ts"]
     J -->|"Gumbel / TR"| I
-    H -->|"Nível Atual + Taxa Piên"| K["hydrological-forecast.ts"]
+    H -->|"Nível Atual + Tendência"| K["hydrological-forecast.ts"]
     E -->|"Chuva + Umidade do Solo"| K
     K -->|"Projeção 7 dias"| I
     I --> L["Dashboard (React)"]
@@ -229,23 +228,30 @@ O módulo [hydrological-forecast.ts](src/lib/hydrological-forecast.ts) implement
 6. **Inércia da tendência recente** (persistência da taxa horária de subida/descida).
 7. **Cálculo estocástico de probabilidade e bandas de incerteza** ($z\text{-score}$ para cotas de alerta e emergência).
 
-### 5.2 Coeficiente de Resposta e Modulação por Umidade do Solo
+### 5.2 Método de Escoamento SCS-CN e Modulação por Umidade do Solo
 
-O **coeficiente base de sensibilidade chuva-nível** é $C_r = 0{,}033\text{ m/mm}$, calibrado a partir da mediana do Quadro 9 da dissertação de John (2021). 
+Para refletir a física de saturação da bacia, o modelo converte a chuva bruta em **escoamento superficial efetivo (Runoff)** através do método **Curve Number** do *Soil Conservation Service (SCS-CN)* do Departamento de Agricultura dos EUA.
 
-Para refletir a física de saturação do solo, a API Open-Meteo fornece a **umidade volumétrica do subsolo** ($\theta_{\text{solo}}$, medida na camada de 7 a 28 cm em $\text{m}^3/\text{m}^3$). A umidade modula o coeficiente de resposta via uma função quadrática limitada (*clamped*):
+A API Open-Meteo fornece a **umidade volumétrica do subsolo** da bacia ($\theta_{\text{solo}}$ medida na camada de 7 a 28 cm em $\text{m}^3/\text{m}^3$). A partir desse dado em tempo real, calculamos dinamicamente o parâmetro $CN$ (Curve Number), que varia de $50$ (solo extremamente seco) até $98$ (saturado):
 
-$$M_{\text{solo}} = \max\left(0{,}2;\; \min\left(2{,}0;\; \left(\frac{\theta_{\text{solo}}}{0{,}25}\right)^2\right)\right)$$
+$$CN = \min\left(98;\; \max(50;\; 45 + \theta_{\text{solo}} \times 110)\right)$$
 
-$$C_{r,\text{ajustado}} = C_r \times M_{\text{solo}}$$
+A partir do $CN$, calculamos a retenção potencial máxima de água pelo solo ($S$) em mm, e a **Abstração Inicial** ($I_a$), que é a parcela da chuva retida pela vegetação e por infiltração acelerada antes de escoar:
 
-Onde $\theta_{\text{ref}} = 0{,}25\text{ m}^3/\text{m}^3$ (25%) é a umidade média histórica da bacia:
+$$S = \frac{25400}{CN} - 254$$
+$$I_a = 0{,}2 \times S$$
 
-| Estado do Solo | Umidade ($\theta_{\text{solo}}$) | Multiplicador ($M_{\text{solo}}$) | Resposta Efetiva ($C_{r,\text{ajustado}}$) | Efeito Dinâmico |
+A precipitação efetiva ($P_e$, ou escoamento superficial - Runoff) é gerada apenas quando a chuva probabilística ($P$) excede a abstração inicial ($I_a$):
+
+$$P_e = \begin{cases} 0 & \text{se } P \le I_a \\ \frac{(P - I_a)^2}{P + 0{,}8 \times S} & \text{se } P > I_a \end{cases}$$
+
+O excesso de precipitação $P_e$ é então multiplicado por um coeficiente de calibração volumétrica $C_v = 0{,}13\text{ m/mm}$, que converte o escoamento gerado na bacia em uma cota correspondente na régua fluviométrica:
+
+| Estado do Solo | Umidade ($\theta_{\text{solo}}$) | $CN$ Resultante | Retenção ($S$) | Dinâmica Hidrológica |
 |---|---|---|---|---|
-| 🟢 **Seco** | $< 0{,}20\text{ m}^3/\text{m}^3$ (<20%) | $0{,}20$ a $0{,}64$ | $0{,}007$ a $0{,}021\text{ m/mm}$ | Alta capacidade de infiltração; rio sobe pouco |
-| 🟡 **Médio / Normal** | $\approx 0{,}25\text{ m}^3/\text{m}^3$ (25%) | $1{,}00$ | $0{,}033\text{ m/mm}$ | Resposta padrão calibrada |
-| 🔴 **Saturado** | $> 0{,}35\text{ m}^3/\text{m}^3$ (>35%) | Até $2{,}00$ | $0{,}066\text{ m/mm}$ | Infiltração nula; precipitação vira enxurrada imediata |
+| 🟢 **Seco** | $< 0{,}20\text{ m}^3/\text{m}^3$ | $\approx 60$ | $\approx 170\text{ mm}$ | Alta abstração. Chuvas moderadas são totalmente infiltradas; rio sobe pouco. |
+| 🟡 **Médio / Normal** | $\approx 0{,}25\text{ m}^3/\text{m}^3$ | $\approx 72$ | $\approx 98\text{ mm}$ | Resposta hidrológica padrão para a bacia mista. |
+| 🔴 **Saturado** | $> 0{,}35\text{ m}^3/\text{m}^3$ | $> 83$ | $< 50\text{ mm}$ | Solo não infiltra. A chuva vira quase 100% escoamento superficial (enxurrada imediata). |
 
 ### 5.3 Kernel de Propagação Hidrológica (Hidrograma Unitário de 7 Dias)
 
@@ -263,18 +269,18 @@ O modelo distribui o impacto de cada chuva ao longo de 7 dias através do kernel
 | **Dia +5** | 10% | Cauda do hidrograma (escoamento subsuperficial) |
 | **Dia +6** | 5% | Fluxo de base tardio |
 
-$$h_{\text{contribuição, chuva}}(t) = \sum_{w=0}^{6} P_{\text{efetiva}}(t-w) \times W_w \times C_{r,\text{ajustado}}$$
+$$h_{\text{contribuição, chuva}}(t) = \sum_{w=0}^{6} P_{e}(t-w) \times W_w \times C_v$$
 
 ### 5.4 Efeito Residual de Chuvas Recentes (Últimas 24h)
 
-Caso tenha ocorrido precipitação acumulada significativa nas últimas 24h ($P_{\text{24h}} > 5\text{ mm}$), o modelo adiciona sua contribuição residual ainda em trânsito:
+Caso tenha ocorrido precipitação acumulada nas últimas 24h ($P_{\text{24h}}$), o modelo converte essa chuva recente em Runoff efetivo ($P_{e, \text{24h}}$) usando o mesmo método SCS-CN, adicionando sua contribuição residual que ainda está em trânsito pela bacia:
 
-$$\Delta h_{\text{residual}}(D_0) = P_{\text{24h}} \times 0{,}4 \times C_{r,\text{ajustado}}$$
-$$\Delta h_{\text{residual}}(D_{+1}) = P_{\text{24h}} \times 0{,}2 \times C_{r,\text{ajustado}}$$
+$$\Delta h_{\text{residual}}(D_0) = P_{e, \text{24h}} \times 0{,}4 \times C_v$$
+$$\Delta h_{\text{residual}}(D_{+1}) = P_{e, \text{24h}} \times 0{,}2 \times C_v$$
 
-### 5.5 Propagação da Onda de Cheia a Montante (Estação Fragosos / Piên / Routing)
+### 5.5 Propagação da Onda de Cheia a Montante (Routing)
 
-A telemetria da estação de cabeceira em **Fragosos / Piên** (`65090000`) fornece a taxa horária de variação $\dot{h}_{\text{montante}}$ (m/h). Quando $|\dot{h}_{\text{montante}}| > 0{,}01\text{ m/h}$ (variação $> 1\text{ cm/h}$), o modelo calcula a propagação da onda de montante (*hydraulic routing*) com tempo de viagem de 24h a 48h:
+O modelo possui suporte nativo à telemetria de estações de cabeceira (ex: Fragosos / Piên). Quando ativa, a taxa horária de variação $\dot{h}_{\text{montante}}$ (m/h) é convertida para calcular a propagação da onda de montante (*hydraulic routing*) com tempo de viagem de 24h a 48h:
 
 $$\Delta h_{\text{diário, montante}} = \dot{h}_{\text{montante}} \times 24 \quad [\text{m/dia}]$$
 
@@ -283,11 +289,11 @@ $$\Delta h_{\text{diário, montante}} = \dot{h}_{\text{montante}} \times 24 \qua
 - **Dia +2 (Depois de amanhã)**: recebe 30% da onda:
   $$h_{\text{montante}}(D_{+2}) = \Delta h_{\text{diário, montante}} \times 0{,}30$$
 
-### 5.6 Chuva Efetiva Ponderada por Certeza
+### 5.6 Chuva Efetiva Ponderada por Certeza Probabilística
 
-A precipitação diária bruta prevista ($P_{\text{bruta}}$) é ajustada pela probabilidade meteorológica de ocorrência ($p_{\text{prob}} \in [0, 1]$):
+Antes de entrar na equação de abstração inicial do SCS-CN, a precipitação diária bruta prevista ($P_{\text{bruta}}$) é ponderada pela probabilidade meteorológica de ocorrência ($p_{\text{prob}} \in [0, 1]$):
 
-$$P_{\text{efetiva}} = P_{\text{bruta}} \times (0{,}4 + 0{,}6 \times p_{\text{prob}})$$
+$$P_{\text{provável}} = P_{\text{bruta}} \times (0{,}3 + 0{,}7 \times p_{\text{prob}})$$
 
 ### 5.7 Recessão Natural do Nível
 
@@ -414,7 +420,10 @@ A função `calculateSummaryStatistics()` em [statistics.ts](src/lib/statistics.
 A previsão do tempo e os dados ambientais de solo são obtidos da **API Open-Meteo**, um serviço aberto que fornece previsões numéricas do tempo (NWP) baseadas em modelos globais e regionais (como ECMWF, GFS e ICON):
 
 - **URL Base**: `https://api.open-meteo.com/v1/forecast`
-- **Coordenadas**: -26.1114°S, -49.8044°W (centro da bacia do Rio Negro)
+- **Coordenadas Multi-ponto (Espacialização)**: O modelo captura a dinâmica da chuva em toda a bacia através de média espacial ponderada entre três sub-bacias:
+  1. **Foz/Centro Rio Negro** (-26.1114°S, -49.8044°W) — *Peso 35%*
+  2. **Médio Rio Negro** (-26.2500°S, -49.5200°W) — *Peso 35%*
+  3. **Cabeceiras/Campo Alegre** (-26.2000°S, -49.3000°W) — *Peso 30%*
 - **Horizonte**: 7 dias
 - **Variáveis diárias**: código WMO, temperatura máx/mín, precipitação acumulada (`precipitation_sum`), probabilidade de precipitação (`precipitation_probability_max`), velocidade máxima do vento
 - **Variáveis horárias**: precipitação horária, probabilidade horária de chuva, temperatura a 2m, **umidade volumétrica do solo na camada 7 a 28 cm** (`soil_moisture_7_to_28cm`)

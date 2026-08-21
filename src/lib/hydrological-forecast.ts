@@ -39,11 +39,7 @@ export interface HydrologicalProjectionResult {
   riskAdvice: string;
 }
 
-/**
- * Coeficiente de sensibilidade chuva-nível da bacia do Rio Negro (PR/SC):
- * Calibrado a partir da mediana do Quadro 9 da dissertação (aproximadamente 0.033 m/mm).
- */
-const RAIN_RESPONSE_COEFFICIENT = 0.033;
+
 
 /**
  * Kernel de propagação hidrológica (tempo de concentração da bacia):
@@ -73,42 +69,53 @@ export function calculateHydrologicalForecast(
   const safeCurrent = Math.max(1.0, isNaN(currentLevel) ? 4.5 : currentLevel);
   const nDays = forecastDaily.length;
 
-  // Ajusta o coeficiente de resposta da chuva com base na umidade do solo.
-  // Se o solo estiver muito seco (< 0.20), absorve mais.
-  // Se o solo estiver saturado (> 0.35), o escoamento é muito maior.
-  // Umidade média de 0.25 mantém o coeficiente base de 0.033.
-  const moistureMultiplier = Math.max(0.2, Math.min(2.0, (soilMoisture / 0.25) * (soilMoisture / 0.25)));
-  const adjustedRainCoef = RAIN_RESPONSE_COEFFICIENT * moistureMultiplier;
+  // Método SCS-CN (Soil Conservation Service - Curve Number) para calcular o escoamento superficial (Runoff)
+  // CN varia entre ~50 (solo muito seco) a ~95 (solo saturado)
+  const curveNumber = Math.min(98, Math.max(50, 45 + (soilMoisture * 110)));
+  const S_storage = (25400 / curveNumber) - 254; // Retenção potencial máxima (mm)
+  const Ia = 0.2 * S_storage; // Abstração inicial (perdas por interceptação e infiltração antes do escoamento)
+  
+  // Fator de calibração: metros de elevação do rio por mm de escoamento efetivo (Runoff)
+  const RUNOFF_TO_LEVEL_COEF = 0.13; 
 
   // Calcula a matriz de contribuição de chuva por dia com retardo (convolução hidrológica)
   const rainContributions = new Array(nDays).fill(0);
 
-  // Considera o efeito residual da chuva recente das últimas 24h
-  if (recentRain24h > 5) {
-    rainContributions[0] += recentRain24h * 0.4 * adjustedRainCoef;
+  // Considera o efeito residual da chuva recente das últimas 24h usando o SCS-CN
+  let recentPe = 0;
+  if (recentRain24h > Ia) {
+    recentPe = Math.pow(recentRain24h - Ia, 2) / (recentRain24h + 0.8 * S_storage);
+  }
+  if (recentPe > 0) {
+    rainContributions[0] += recentPe * 0.4 * RUNOFF_TO_LEVEL_COEF;
     if (nDays > 1) {
-      rainContributions[1] += recentRain24h * 0.2 * adjustedRainCoef;
+      rainContributions[1] += recentPe * 0.2 * RUNOFF_TO_LEVEL_COEF;
     }
   }
 
   // Propagação da onda de cheia da estação a montante (routing geográfico).
-  // Se o rio estiver subindo forte lá em cima, essa água chegará aqui em 1 a 2 dias.
   if (upstreamTrendRate !== null && Math.abs(upstreamTrendRate) > 0.01 && nDays > 2) {
-    const dailyUpstreamVariation = upstreamTrendRate * 24; // Conversão m/h para m/dia
-    // A onda viaja e se atenua. O pico chega entre D+1 e D+2.
+    const dailyUpstreamVariation = upstreamTrendRate * 24; 
     rainContributions[1] += dailyUpstreamVariation * 0.4;
     rainContributions[2] += dailyUpstreamVariation * 0.3;
   }
 
   for (let i = 0; i < nDays; i++) {
-    const rain = forecastDaily[i].precipitationSum;
+    const rawRain = forecastDaily[i].precipitationSum;
     const prob = forecastDaily[i].precipitationProbability / 100;
-    const effectiveRain = rain * (0.4 + 0.6 * prob); // Pondera chuva pelo grau de certeza
+    
+    // Pondera a chuva pelo grau de certeza probabilística do modelo
+    const probableRain = rawRain * (0.3 + 0.7 * prob); 
+
+    let Pe = 0; // Precipitation excess (Runoff efetivo em mm)
+    if (probableRain > Ia) {
+      Pe = Math.pow(probableRain - Ia, 2) / (probableRain + 0.8 * S_storage);
+    }
 
     for (let w = 0; w < HYDROGRAPH_WEIGHTS.length; w++) {
       const targetDay = i + w;
       if (targetDay < nDays) {
-        rainContributions[targetDay] += effectiveRain * HYDROGRAPH_WEIGHTS[w] * adjustedRainCoef;
+        rainContributions[targetDay] += Pe * HYDROGRAPH_WEIGHTS[w] * RUNOFF_TO_LEVEL_COEF;
       }
     }
   }
@@ -164,12 +171,12 @@ export function calculateHydrologicalForecast(
     const inertia = i === 1 ? Math.max(-0.15, Math.min(0.25, recentTrendRate * 12)) : 0;
 
     // Novo nível esperado
-    runningLevel = Math.max(2.5, runningLevel - dailyRecession + inflowRise + inertia);
+    runningLevel = Math.max(BASELINE_RIVER_LEVEL, runningLevel - dailyRecession + inflowRise + inertia);
     const expected = Number(runningLevel.toFixed(2));
 
     // Margem de incerteza (cresce com o horizonte temporal)
     const uncertainty = Number((0.12 + (i - 1) * 0.07 + (dayForecast.precipitationSum > 15 ? 0.30 : 0.08)).toFixed(2));
-    const minLvl = Number(Math.max(2.0, expected - uncertainty).toFixed(2));
+    const minLvl = Number(Math.max(BASELINE_RIVER_LEVEL, expected - uncertainty).toFixed(2));
     const maxLvl = Number((expected + uncertainty * 1.35).toFixed(2));
 
     if (maxLvl > maxProjected) {

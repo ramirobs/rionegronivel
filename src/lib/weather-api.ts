@@ -37,11 +37,12 @@ export interface WeatherForecastResponse {
   };
 }
 
-// Coordenadas centrais da bacia de Rio Negro (PR) e Mafra (SC)
-const RIO_NEGRO_COORDS = {
-  latitude: -26.1114,
-  longitude: -49.8044,
-};
+// Coordenadas das sub-bacias para espacialização da chuva (Multi-point)
+const BASIN_COORDS = [
+  { name: 'RioNegro', latitude: -26.1114, longitude: -49.8044, weight: 0.35 }, // Foz / Centro
+  { name: 'Medio', latitude: -26.25, longitude: -49.52, weight: 0.35 }, // Médio Rio Negro
+  { name: 'Cabeceiras', latitude: -26.20, longitude: -49.30, weight: 0.30 }, // Cabeceiras / Campo Alegre
+];
 
 /**
  * Traduz o código WMO (World Meteorological Organization) para descrição e ícone amigáveis em português.
@@ -173,8 +174,8 @@ function generateFallbackForecast(): WeatherForecastResponse {
   }
 
   return {
-    latitude: RIO_NEGRO_COORDS.latitude,
-    longitude: RIO_NEGRO_COORDS.longitude,
+    latitude: BASIN_COORDS[0].latitude,
+    longitude: BASIN_COORDS[0].longitude,
     timezone: 'America/Sao_Paulo',
     daily,
     hourly,
@@ -186,63 +187,77 @@ function generateFallbackForecast(): WeatherForecastResponse {
 /**
  * Consulta a previsão do tempo de 7 dias da API do Open-Meteo.
  */
-export async function fetchWeatherForecast(
-  lat: number = RIO_NEGRO_COORDS.latitude,
-  lon: number = RIO_NEGRO_COORDS.longitude
-): Promise<WeatherForecastResponse> {
-  const url = new URL('https://api.open-meteo.com/v1/forecast');
-  url.searchParams.set('latitude', lat.toString());
-  url.searchParams.set('longitude', lon.toString());
-  url.searchParams.set(
-    'daily',
-    'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max'
-  );
-  url.searchParams.set(
-    'hourly',
-    'precipitation,precipitation_probability,temperature_2m,soil_moisture_7_to_28cm'
-  );
-  url.searchParams.set('timezone', 'America/Sao_Paulo');
-  url.searchParams.set('forecast_days', '7');
-
+export async function fetchWeatherForecast(): Promise<WeatherForecastResponse> {
   try {
-    const res = await fetch(url.toString(), {
-      next: { revalidate: 1800 }, // Cache de 30 minutos no Next.js
-      headers: {
-        Accept: 'application/json',
-      },
+    const fetchPromises = BASIN_COORDS.map(coord => {
+      const url = new URL('https://api.open-meteo.com/v1/forecast');
+      url.searchParams.set('latitude', coord.latitude.toString());
+      url.searchParams.set('longitude', coord.longitude.toString());
+      url.searchParams.set(
+        'daily',
+        'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max'
+      );
+      url.searchParams.set(
+        'hourly',
+        'precipitation,precipitation_probability,temperature_2m,soil_moisture_7_to_28cm'
+      );
+      url.searchParams.set('timezone', 'America/Sao_Paulo');
+      url.searchParams.set('forecast_days', '7');
+
+      return fetch(url.toString(), {
+        next: { revalidate: 1800 },
+        headers: { Accept: 'application/json' },
+      }).then(res => {
+        if (!res.ok) throw new Error(`[Open-Meteo] Status não OK: ${res.status}`);
+        return res.json();
+      });
     });
 
-    if (!res.ok) {
-      console.warn(`[Open-Meteo] Status não OK: ${res.status} ${res.statusText}`);
+    const results = await Promise.all(fetchPromises);
+    
+    // Assegura que todos têm dados diários
+    if (results.some(d => !d.daily || !d.daily.time)) {
       return generateFallbackForecast();
     }
 
-    const data = await res.json();
-
-    if (!data.daily || !data.daily.time) {
-      return generateFallbackForecast();
-    }
-
+    // Usa o primeiro (Rio Negro) como base estrutural
+    const baseData = results[0];
     const daily: DailyWeatherForecast[] = [];
     let totalRain = 0;
     let maxRain = { date: '', precipitation: 0 };
 
-    for (let i = 0; i < data.daily.time.length; i++) {
-      const dateStr = data.daily.time[i];
+    for (let i = 0; i < baseData.daily.time.length; i++) {
+      const dateStr = baseData.daily.time[i];
       const [, m, d] = dateStr.split('-');
       const dateFormatted = `${d}/${m}`;
-
-      // Cria objeto Date no timezone local para obter o dia da semana correto
       const dateObj = new Date(`${dateStr}T12:00:00-03:00`);
       const dayOfWeek = DAYS_OF_WEEK[dateObj.getDay()];
 
-      const precipSum = Number((data.daily.precipitation_sum?.[i] ?? 0).toFixed(1));
-      const precipProb = Number((data.daily.precipitation_probability_max?.[i] ?? 0).toFixed(0));
-      const tMax = Math.round(data.daily.temperature_2m_max?.[i] ?? 20);
-      const tMin = Math.round(data.daily.temperature_2m_min?.[i] ?? 12);
-      const windMax = Math.round(data.daily.wind_speed_10m_max?.[i] ?? 15);
-      const weatherCode = data.daily.weather_code?.[i] ?? 0;
+      let precipSum = 0;
+      let precipProb = 0;
+      let tMax = -100;
+      let tMin = 100;
+      let windMax = 0;
 
+      // Calcular média ponderada espacial
+      for (let c = 0; c < BASIN_COORDS.length; c++) {
+        const weight = BASIN_COORDS[c].weight;
+        const data = results[c];
+        
+        precipSum += (data.daily.precipitation_sum?.[i] ?? 0) * weight;
+        precipProb += (data.daily.precipitation_probability_max?.[i] ?? 0) * weight;
+        tMax = Math.max(tMax, data.daily.temperature_2m_max?.[i] ?? -100);
+        tMin = Math.min(tMin, data.daily.temperature_2m_min?.[i] ?? 100);
+        windMax = Math.max(windMax, data.daily.wind_speed_10m_max?.[i] ?? 0);
+      }
+
+      precipSum = Number(precipSum.toFixed(1));
+      precipProb = Number(precipProb.toFixed(0));
+      tMax = Math.round(tMax);
+      tMin = Math.round(tMin);
+      windMax = Math.round(windMax);
+      
+      const weatherCode = baseData.daily.weather_code?.[i] ?? 0;
       const details = getWeatherCodeDetails(weatherCode);
 
       totalRain += precipSum;
@@ -266,28 +281,47 @@ export async function fetchWeatherForecast(
     }
 
     const hourly: HourlyWeatherForecast[] = [];
-    let currentSoilMoisture = 0.25; // fallback average moisture
-
-    if (data.hourly && data.hourly.time) {
-      if (data.hourly.soil_moisture_7_to_28cm && data.hourly.soil_moisture_7_to_28cm.length > 0) {
-        // Obter o primeiro valor de umidade do solo disponível
-        currentSoilMoisture = Number(data.hourly.soil_moisture_7_to_28cm[0]);
+    let currentSoilMoisture = 0;
+    
+    // Média ponderada da umidade do solo
+    for (let c = 0; c < BASIN_COORDS.length; c++) {
+      const weight = BASIN_COORDS[c].weight;
+      const data = results[c];
+      if (data.hourly?.soil_moisture_7_to_28cm?.length > 0) {
+        currentSoilMoisture += Number(data.hourly.soil_moisture_7_to_28cm[0]) * weight;
+      } else {
+        currentSoilMoisture += 0.25 * weight;
       }
+    }
 
-      for (let j = 0; j < Math.min(data.hourly.time.length, 72); j++) {
+    if (baseData.hourly && baseData.hourly.time) {
+      for (let j = 0; j < Math.min(baseData.hourly.time.length, 72); j++) {
+        let hPrecip = 0;
+        let hProb = 0;
+        let hTemp = 0;
+
+        for (let c = 0; c < BASIN_COORDS.length; c++) {
+          const weight = BASIN_COORDS[c].weight;
+          const data = results[c];
+          
+          hPrecip += (data.hourly.precipitation?.[j] ?? 0) * weight;
+          hProb += (data.hourly.precipitation_probability?.[j] ?? 0) * weight;
+          hTemp += (data.hourly.temperature_2m?.[j] ?? 18) * weight;
+        }
+
         hourly.push({
-          time: data.hourly.time[j],
-          precipitation: Number((data.hourly.precipitation?.[j] ?? 0).toFixed(1)),
-          precipitationProbability: Number(data.hourly.precipitation_probability?.[j] ?? 0),
-          temperature: Number((data.hourly.temperature_2m?.[j] ?? 18).toFixed(1)),
+          time: baseData.hourly.time[j],
+          precipitation: Number(hPrecip.toFixed(1)),
+          precipitationProbability: Number(hProb.toFixed(0)),
+          temperature: Number(hTemp.toFixed(1)),
         });
       }
     }
 
     return {
-      latitude: data.latitude,
-      longitude: data.longitude,
-      timezone: data.timezone,
+      latitude: baseData.latitude,
+      longitude: baseData.longitude,
+      timezone: baseData.timezone,
       currentSoilMoisture,
       daily,
       hourly,
@@ -295,7 +329,7 @@ export async function fetchWeatherForecast(
       maxRainDay: maxRain,
     };
   } catch (err) {
-    console.error('[Open-Meteo] Erro ao buscar previsão do tempo:', err);
+    console.error('[Open-Meteo] Erro ao buscar previsão do tempo (Multi-point):', err);
     return generateFallbackForecast();
   }
 }
