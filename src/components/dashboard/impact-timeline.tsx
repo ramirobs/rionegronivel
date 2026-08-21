@@ -90,21 +90,7 @@ export default function ImpactTimeline({ hourlyData, dailyData, currentLevel }: 
   }, [hourlyData, dailyData, currentLevel]);
 
   if (timelineEvents.length === 0) {
-    return (
-      <div className="bg-emerald-50/50 rounded-2xl border border-emerald-200/60 p-4 sm:p-5 shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-emerald-100/80">
-            <CheckCircle2 className="h-6 w-6 text-emerald-600" />
-          </div>
-          <div>
-            <h3 className="text-sm sm:text-base font-bold text-emerald-900">Nenhum impacto previsto (Trânsito Livre)</h3>
-            <p className="text-xs text-emerald-700/90 mt-0.5">
-              O nível do rio não atingirá a cota de interdição de nenhuma ponte ou bairro mapeado nos próximos 7 dias.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (

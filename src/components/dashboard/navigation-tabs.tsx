@@ -32,7 +32,8 @@ export default function NavigationTabs({
   onSelectTab,
   riskLevel = 'normal',
 }: NavigationTabsProps) {
-  const isElevatedRisk = riskLevel === 'alert' || riskLevel === 'emergency';
+  const isElevatedRisk = riskLevel !== 'normal';
+  const isRed = riskLevel === 'emergency';
 
   const tabs: TabItem[] = [
     {
@@ -53,14 +54,17 @@ export default function NavigationTabs({
       shortLabel: 'Histórico',
       icon: BarChart3,
     },
-    {
+  ];
+
+  if (isElevatedRisk) {
+    tabs.push({
       id: 'emergency',
       label: 'Emergência & Contatos',
       shortLabel: 'Emergência',
       icon: ShieldAlert,
-      highlightEmergency: isElevatedRisk,
-    },
-  ];
+      highlightEmergency: true,
+    });
+  }
 
   return (
     <>
@@ -76,6 +80,11 @@ export default function NavigationTabs({
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
+              
+              const isEmergencyTab = tab.id === 'emergency';
+              const emergencyColorClass = riskLevel === 'attention' ? 'text-yellow-500' : riskLevel === 'alert' ? 'text-orange-500' : 'text-rose-500';
+              const emergencyBgClass = riskLevel === 'attention' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' : riskLevel === 'alert' ? 'bg-orange-100 text-orange-800 border-orange-200' : 'bg-rose-100 text-rose-800 border-rose-200';
+              const emergencyBadgeText = riskLevel === 'attention' ? 'ATENÇÃO' : riskLevel === 'alert' ? 'ALERTA' : 'EMERGÊNCIA';
 
               return (
                 <button
@@ -96,7 +105,7 @@ export default function NavigationTabs({
                       isActive
                         ? 'text-blue-600'
                         : tab.highlightEmergency
-                        ? 'text-rose-500 animate-pulse'
+                        ? `${emergencyColorClass} animate-[pulse_3s_ease-in-out_infinite]`
                         : 'text-slate-500'
                     }`}
                   />
@@ -109,9 +118,9 @@ export default function NavigationTabs({
                     </span>
                   )}
 
-                  {tab.highlightEmergency && tab.id === 'emergency' && (
-                    <span className="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-black bg-rose-100 text-rose-700 border border-rose-200">
-                      ALERTA
+                  {tab.highlightEmergency && isEmergencyTab && (
+                    <span className={`inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-black border ${emergencyBgClass}`}>
+                      {emergencyBadgeText}
                     </span>
                   )}
                 </button>
@@ -131,6 +140,11 @@ export default function NavigationTabs({
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
+          
+          const isEmergencyTab = tab.id === 'emergency';
+          const emergencyColorClass = riskLevel === 'attention' ? 'text-yellow-500' : riskLevel === 'alert' ? 'text-orange-500' : 'text-rose-500';
+          const pingColorClass = riskLevel === 'attention' ? 'bg-yellow-400' : riskLevel === 'alert' ? 'bg-orange-400' : 'bg-rose-400';
+          const dotColorClass = riskLevel === 'attention' ? 'bg-yellow-500' : riskLevel === 'alert' ? 'bg-orange-500' : 'bg-rose-600';
 
           return (
               <button
@@ -154,7 +168,7 @@ export default function NavigationTabs({
                     isActive
                       ? 'text-blue-600'
                       : tab.highlightEmergency
-                      ? 'text-rose-500 animate-pulse'
+                      ? `${emergencyColorClass} animate-[pulse_3s_ease-in-out_infinite]`
                       : 'text-slate-500'
                   }`}
                 />
@@ -164,10 +178,10 @@ export default function NavigationTabs({
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                   </span>
                 )}
-                {tab.highlightEmergency && tab.id === 'emergency' && (
+                {tab.highlightEmergency && isEmergencyTab && (
                   <span className="absolute top-0.5 right-0.5 flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600" />
+                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${pingColorClass} opacity-75`} />
+                    <span className={`relative inline-flex rounded-full h-2 w-2 ${dotColorClass}`} />
                   </span>
                 )}
               </div>
