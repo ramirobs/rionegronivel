@@ -1,107 +1,110 @@
 import { NextResponse } from 'next/server';
-import { fetchHistoricalData } from '@/lib/ana-api';
-import { getMaxByYear, cleanRiverData, type AnnualMax } from '@/lib/data-processing';
 import {
   calculateGumbel,
   generateReturnPeriodTable,
   type ReturnPeriodRow,
   type GumbelParameters,
 } from '@/lib/statistics';
+import {
+  HISTORICAL_ANNUAL_MAXIMA,
+  type HistoricalAnnualMax,
+} from '@/data/historical-annual-maxima';
+import { fetchTelemetricData } from '@/lib/ana-api';
+import { cleanRiverData, getMaxByYear } from '@/lib/data-processing';
 import { PRIMARY_STATION } from '@/lib/constants';
 
-export const revalidate = 1800; // 30 minutos (ISR)
+export const revalidate = 3600; // 1 hora (ISR)
 
 export interface StatisticsApiResponse {
   returnPeriodTable: ReturnPeriodRow[];
-  annualMaxima: { year: number; maxLevel: number }[];
+  annualMaxima: { year: number; maxLevel: number; date?: string; isFlood?: boolean }[];
   gumbelParams: GumbelParameters;
-}
-
-/**
- * Série realista de máximas anuais registradas para a estação Rio Negro (65100001)
- * entre os anos de 2015 e 2025. Inclui eventos históricos marcantes como a enchente de out/nov de 2023.
- */
-const MOCK_ANNUAL_MAXIMA: { year: number; maxLevel: number }[] = [
-  { year: 2015, maxLevel: 8.42 },
-  { year: 2016, maxLevel: 6.85 },
-  { year: 2017, maxLevel: 7.95 },
-  { year: 2018, maxLevel: 5.60 },
-  { year: 2019, maxLevel: 6.30 },
-  { year: 2020, maxLevel: 5.15 },
-  { year: 2021, maxLevel: 6.70 },
-  { year: 2022, maxLevel: 8.65 },
-  { year: 2023, maxLevel: 14.00 }, // Enchente histórica de 2023
-  { year: 2024, maxLevel: 7.45 },
-  { year: 2025, maxLevel: 6.10 },
-];
-
-/**
- * Gera as estatísticas de contingência usando a série realista de máximas de Rio Negro.
- */
-function getFallbackStatistics(): StatisticsApiResponse {
-  const gumbelParams = calculateGumbel(MOCK_ANNUAL_MAXIMA);
-  const returnPeriodTable = generateReturnPeriodTable(MOCK_ANNUAL_MAXIMA);
-
-  return {
-    returnPeriodTable,
-    annualMaxima: MOCK_ANNUAL_MAXIMA,
-    gumbelParams,
+  metadata?: {
+    totalYears: number;
+    analyzedYears: number;
+    startYear: number;
+    endYear: number;
+    source: string;
   };
 }
 
 export async function GET() {
   try {
-    let annualMaximaList: { year: number; maxLevel: number }[] = [];
+    // 1. Carrega a série histórica consolidada local (1930 a 2025)
+    const annualList: HistoricalAnnualMax[] = [...HISTORICAL_ANNUAL_MAXIMA];
 
+    // 2. Tenta obter medições do ano corrente (2026) via telemetria leve da ANA
+    const currentYear = new Date().getFullYear();
     try {
-      // Tenta buscar o histórico da estação convencional 65100000 (com décadas de dados) ou da telemétrica
-      let rawHistorical = await fetchHistoricalData('65100000', '1');
-      if (rawHistorical.length === 0) {
-        rawHistorical = await fetchHistoricalData(PRIMARY_STATION.code, '1');
-      }
-      const cleanData = cleanRiverData(rawHistorical);
+      const today = new Date();
+      const startOfYear = new Date(currentYear, 0, 1);
+      const startStr = `${String(startOfYear.getDate()).padStart(2, '0')}/${String(startOfYear.getMonth() + 1).padStart(2, '0')}/${currentYear}`;
+      const endStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${currentYear}`;
 
-      if (cleanData.length > 50) {
-        const annualMaxObjs: AnnualMax[] = getMaxByYear(cleanData);
-
-        // Filtra a série para utilizar apenas dados a partir de 1990, 
-        // conforme estudo hidrológico que demonstra aumento da frequência de inundações
-        const recentMaxima = annualMaxObjs.filter(item => item.year >= 1990);
-
-        // Requer pelo menos 5 anos distintos para que o ajuste de Gumbel tenha significância estatística
-        if (recentMaxima.length >= 5) {
-          annualMaximaList = recentMaxima.map((item) => ({
-            year: item.year,
-            maxLevel: item.maxLevel,
-          }));
-        } else if (annualMaxObjs.length >= 5) {
-          annualMaximaList = annualMaxObjs.map((item) => ({
-            year: item.year,
-            maxLevel: item.maxLevel,
-          }));
+      const telemetry2026 = await fetchTelemetricData(PRIMARY_STATION.code, startStr, endStr);
+      const cleaned = cleanRiverData(telemetry2026);
+      if (cleaned.length > 0) {
+        const max2026 = getMaxByYear(cleaned).find((item) => item.year === currentYear);
+        if (max2026 && max2026.maxLevel > 0) {
+          // Atualiza ou insere o ano atual na série
+          const existingIdx = annualList.findIndex((item) => item.year === currentYear);
+          const currentEntry: HistoricalAnnualMax = {
+            year: currentYear,
+            maxLevel: max2026.maxLevel,
+            date: max2026.date,
+            isFlood: max2026.maxLevel >= 6.0,
+          };
+          if (existingIdx >= 0) {
+            annualList[existingIdx] = currentEntry;
+          } else {
+            annualList.push(currentEntry);
+          }
         }
       }
-    } catch (fetchErr) {
-      console.warn('[API statistics] Falha ao obter série histórica da ANA, utilizando calibração regional:', fetchErr);
+    } catch {
+      // Falha silenciosa na telemetria de 2026: a base histórica 1930-2025 garante o cálculo perfeito
     }
 
-    // Se não obteve dados suficientes da ANA, utiliza a série calibrada 2015-2025
-    if (annualMaximaList.length < 5) {
-      annualMaximaList = MOCK_ANNUAL_MAXIMA;
-    }
+    // 3. Filtra a janela recente (a partir de 1990) conforme recomendação metodológica (John, 2021)
+    const recentMaxima = annualList.filter((item) => item.year >= 1990);
+    const seriesToFit = recentMaxima.length >= 5 ? recentMaxima : annualList;
 
-    const gumbelParams = calculateGumbel(annualMaximaList);
-    const returnPeriodTable = generateReturnPeriodTable(annualMaximaList);
+    // 4. Ajuste da Distribuição de Gumbel e cálculo dos Períodos de Retorno
+    const gumbelParams = calculateGumbel(seriesToFit);
+    const returnPeriodTable = generateReturnPeriodTable(seriesToFit);
 
     const responseData: StatisticsApiResponse = {
       returnPeriodTable,
-      annualMaxima: annualMaximaList,
+      annualMaxima: seriesToFit.map((item) => ({
+        year: item.year,
+        maxLevel: item.maxLevel,
+        date: item.date,
+        isFlood: item.isFlood,
+      })),
       gumbelParams,
+      metadata: {
+        totalYears: annualList.length,
+        analyzedYears: seriesToFit.length,
+        startYear: seriesToFit[0]?.year ?? 1990,
+        endYear: seriesToFit[seriesToFit.length - 1]?.year ?? currentYear,
+        source: 'Série Consolidada CPRM/ANA/IAT (John, 2021) + Telemetria 65100001',
+      },
     };
 
     return NextResponse.json(responseData);
   } catch (error) {
-    console.error('[API statistics] Erro crítico no endpoint, fornecendo resposta de segurança:', error);
-    return NextResponse.json(getFallbackStatistics());
+    console.error('[API statistics] Erro inesperado no cálculo estatístico:', error);
+
+    // Fallback de emergência garantido pela base local
+    const fallbackList = HISTORICAL_ANNUAL_MAXIMA.filter((item) => item.year >= 1990);
+    const gumbelParams = calculateGumbel(fallbackList);
+    const returnPeriodTable = generateReturnPeriodTable(fallbackList);
+
+    return NextResponse.json({
+      returnPeriodTable,
+      annualMaxima: fallbackList,
+      gumbelParams,
+    });
   }
 }
+
