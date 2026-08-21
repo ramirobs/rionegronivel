@@ -165,29 +165,29 @@ function extractTagBlocks(xml: string, tagName: string): string[] {
 }
 
 function normalizeLevelToMeters(rawLevel: number | string | null | undefined): number {
-  if (rawLevel === null || rawLevel === undefined) return 0;
+  if (rawLevel === null || rawLevel === undefined) return NaN;
   const num = typeof rawLevel === 'string' ? parseFloat(rawLevel) : rawLevel;
-  if (isNaN(num)) return 0;
+  if (isNaN(num)) return NaN;
   
-  if (num === 8888 || num === 9999) return 0;
-  if (num <= 0) return 0;
+  if (num === 8888 || num === 9999) return NaN;
+  if (num <= 0) return NaN;
   
   let meters = num;
   if (num > 30) {
     meters = num / 100;
   }
   
-  if (meters > 15) return 0;
+  if (meters > 15) return NaN;
   
   return Number(meters.toFixed(3));
 }
 
 function parseNumericValue(valueStr: string | number | null | undefined): number {
-  if (valueStr === null || valueStr === undefined) return 0;
+  if (valueStr === null || valueStr === undefined) return NaN;
   if (typeof valueStr === 'number') return valueStr;
   const sanitized = valueStr.trim().replace(',', '.');
   const num = parseFloat(sanitized);
-  return isNaN(num) ? 0 : num;
+  return isNaN(num) ? NaN : num;
 }
 
 function parseDateString(dateStr: string): string | null {

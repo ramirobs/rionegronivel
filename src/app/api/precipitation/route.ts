@@ -3,7 +3,6 @@ import { fetchHistoricalData, fetchTelemetricData } from '@/lib/ana-api';
 import { aggregateByDay, cleanRiverData } from '@/lib/data-processing';
 import { STATIONS, PRIMARY_STATION } from '@/lib/constants';
 
-export const revalidate = 1800; // 30 minutos (ISR)
 export const dynamic = 'force-dynamic';
 
 export interface PrecipitationPoint {

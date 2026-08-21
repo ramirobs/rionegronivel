@@ -68,7 +68,7 @@ export function calculateHydrologicalForecast(
   forecastDaily: DailyWeatherForecast[],
   recentRain24h: number = 0,
   soilMoisture: number = 0.25, // m³/m³
-  upstreamTrendRate: number = 0 // m/h (Estação a montante)
+  upstreamTrendRate: number | null = 0 // m/h (Estação a montante)
 ): HydrologicalProjectionResult {
   const safeCurrent = Math.max(1.0, isNaN(currentLevel) ? 4.5 : currentLevel);
   const nDays = forecastDaily.length;
@@ -93,7 +93,7 @@ export function calculateHydrologicalForecast(
 
   // Propagação da onda de cheia da estação a montante (routing geográfico).
   // Se o rio estiver subindo forte lá em cima, essa água chegará aqui em 1 a 2 dias.
-  if (Math.abs(upstreamTrendRate) > 0.01 && nDays > 2) {
+  if (upstreamTrendRate !== null && Math.abs(upstreamTrendRate) > 0.01 && nDays > 2) {
     const dailyUpstreamVariation = upstreamTrendRate * 24; // Conversão m/h para m/dia
     // A onda viaja e se atenua. O pico chega entre D+1 e D+2.
     rainContributions[1] += dailyUpstreamVariation * 0.4;

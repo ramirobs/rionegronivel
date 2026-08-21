@@ -59,7 +59,6 @@ export function classifyRisk(level: number): RiskLevel {
     return 'attention';
   }
   return 'normal';
-  return 'normal';
 }
 
 /**

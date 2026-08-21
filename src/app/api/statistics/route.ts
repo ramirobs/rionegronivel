@@ -13,7 +13,7 @@ import { fetchTelemetricData } from '@/lib/ana-api';
 import { cleanRiverData, getMaxByYear } from '@/lib/data-processing';
 import { PRIMARY_STATION } from '@/lib/constants';
 
-export const revalidate = 3600; // 1 hora (ISR)
+export const dynamic = 'force-dynamic';
 
 export interface StatisticsApiResponse {
   returnPeriodTable: ReturnPeriodRow[];

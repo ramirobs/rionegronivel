@@ -70,28 +70,28 @@ export function cleanRiverData(
     const time = new Date(item.date).getTime();
     if (isNaN(time)) continue;
 
-    const level = typeof item.level === 'number' && !isNaN(item.level) ? Math.max(0, item.level) : 0;
-    const flow = typeof item.flow === 'number' && !isNaN(item.flow) ? Math.max(0, item.flow) : 0;
+    const level = typeof item.level === 'number' && !isNaN(item.level) ? Math.max(0, item.level) : NaN;
+    const flow = typeof item.flow === 'number' && !isNaN(item.flow) ? Math.max(0, item.flow) : NaN;
     const precipitation =
       typeof item.precipitation === 'number' && !isNaN(item.precipitation)
         ? Math.max(0, item.precipitation)
-        : 0;
+        : NaN;
 
-    // Se o nível for 0 e flow/chuva forem 0, verifica se há dados significativos
+    if (isNaN(level) && isNaN(flow) && isNaN(precipitation)) {
+      continue;
+    }
+
     const cleanedPoint: RiverDataPoint = {
       date: item.date,
-      level: Number(level.toFixed(3)),
-      flow: Number(flow.toFixed(2)),
-      precipitation: Number(precipitation.toFixed(1)),
+      level: !isNaN(level) ? Number(level.toFixed(3)) : NaN,
+      flow: !isNaN(flow) ? Number(flow.toFixed(2)) : NaN,
+      precipitation: !isNaN(precipitation) ? Number(precipitation.toFixed(1)) : NaN,
     };
 
-    // Chave única para data/hora
     validMap.set(item.date, cleanedPoint);
   }
 
   const cleaned = Array.from(validMap.values());
-
-  // Ordena cronologicamente crescente
   cleaned.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   return cleaned;
@@ -114,19 +114,21 @@ export function calculateTrend(data: RiverDataPoint[], hoursBack: number = 6): T
     previousLevel: 0,
   };
 
-  if (!data || data.length < 2) {
-    if (data && data.length === 1) {
+  const validData = data.filter((d) => !isNaN(d.level));
+
+  if (!validData || validData.length < 2) {
+    if (validData && validData.length === 1) {
       return {
         ...defaultResult,
-        latestLevel: data[0].level,
-        previousLevel: data[0].level,
+        latestLevel: validData[0].level,
+        previousLevel: validData[0].level,
       };
     }
     return defaultResult;
   }
 
   // Garante que os dados estejam ordenados
-  const sorted = [...data].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const sorted = [...validData].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   const latest = sorted[sorted.length - 1];
   const latestTime = new Date(latest.date).getTime();
 
@@ -190,17 +192,18 @@ export function calculateTrend(data: RiverDataPoint[], hoursBack: number = 6): T
  * @returns Último ponto medido ou null se vazio
  */
 export function getLatestReading(data: RiverDataPoint[]): RiverDataPoint | null {
-  if (!data || data.length === 0) {
+  const validData = data.filter((d) => !isNaN(d.level));
+  if (!validData || validData.length === 0) {
     return null;
   }
 
-  let latest = data[0];
+  let latest = validData[0];
   let latestTime = new Date(latest.date).getTime();
 
-  for (let i = 1; i < data.length; i++) {
-    const time = new Date(data[i].date).getTime();
+  for (let i = 1; i < validData.length; i++) {
+    const time = new Date(validData[i].date).getTime();
     if (!isNaN(time) && (isNaN(latestTime) || time > latestTime)) {
-      latest = data[i];
+      latest = validData[i];
       latestTime = time;
     }
   }
@@ -259,13 +262,15 @@ export function aggregateByDay(data: RiverDataPoint[]): DailyAggregatedData[] {
   const aggregated: DailyAggregatedData[] = [];
 
   for (const [date, group] of dayMap.entries()) {
-    const count = group.levels.length;
-    if (count === 0) continue;
+    const levelCount = group.levels.length;
+    const precipCount = group.precipitation.length;
+    
+    if (levelCount === 0 && precipCount === 0) continue;
 
     const sumLevel = group.levels.reduce((acc, v) => acc + v, 0);
-    const avgLevel = Number((sumLevel / count).toFixed(3));
-    const maxLevel = Number(Math.max(...group.levels).toFixed(3));
-    const minLevel = Number(Math.min(...group.levels).toFixed(3));
+    const avgLevel = levelCount > 0 ? Number((sumLevel / levelCount).toFixed(3)) : 0;
+    const maxLevel = levelCount > 0 ? Number(Math.max(...group.levels).toFixed(3)) : 0;
+    const minLevel = levelCount > 0 ? Number(Math.min(...group.levels).toFixed(3)) : 0;
 
     const avgFlow =
       group.flows.length > 0
@@ -284,7 +289,7 @@ export function aggregateByDay(data: RiverDataPoint[]): DailyAggregatedData[] {
       minLevel,
       avgFlow,
       totalRain,
-      count,
+      count: Math.max(levelCount, precipCount),
     });
   }
 

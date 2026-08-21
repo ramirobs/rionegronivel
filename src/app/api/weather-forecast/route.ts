@@ -6,7 +6,6 @@ import { cleanRiverData, calculateTrend, getLatestReading } from '@/lib/data-pro
 import { PRIMARY_STATION } from '@/lib/constants';
 import type { RiverDataPoint } from '@/lib/ana-api';
 
-export const revalidate = 1800; // 30 minutos (ISR)
 export const dynamic = 'force-dynamic';
 
 function formatAnaDate(date: Date): string {
@@ -57,7 +56,7 @@ export async function GET() {
       console.warn('[API weather-forecast] Telemetria ANA offline, usando cálculo com cota padrão:', e);
     }
 
-    let upstreamTrendRate = 0;
+    let upstreamTrendRate: number | null = null;
     try {
       // Importa dinamicamente a constante da estação a montante
       const { UPSTREAM_STATION } = await import('@/lib/constants');
@@ -67,8 +66,10 @@ export async function GET() {
            upstreamData = await fetchHistoricalData(UPSTREAM_STATION.code, '1', startStr, endStr);
         }
         const cleanedUpstream = cleanRiverData(upstreamData);
-        const upTrend = calculateTrend(cleanedUpstream);
-        upstreamTrendRate = upTrend ? upTrend.rateOfChange : 0;
+        if (cleanedUpstream.length >= 2) {
+          const upTrend = calculateTrend(cleanedUpstream);
+          upstreamTrendRate = upTrend ? upTrend.rateOfChange : null;
+        }
       }
     } catch (e) {
       console.warn('[API weather-forecast] Falha ao buscar dados a montante:', e);
