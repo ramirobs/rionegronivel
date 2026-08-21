@@ -240,8 +240,11 @@ export async function GET() {
       let prevTime = new Date();
       prevTime.setMinutes(0, 0, 0);
 
-      for (let i = 0; i < projection.projectedHours.length; i++) {
-        const h = projection.projectedHours[i];
+      // Pega apenas as horas futuras (Open-Meteo retorna desde as 00:00 do dia atual)
+      const futureHours = projection.projectedHours.filter(h => new Date(h.time).getTime() > prevTime.getTime());
+
+      for (let i = 0; i < futureHours.length; i++) {
+        const h = futureHours[i];
         const currentTargetTime = new Date(h.time);
         
         // Se for o primeiro ponto (index 0) e bater com a hora atual, pula
