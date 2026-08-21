@@ -321,8 +321,8 @@ export function calculateHydrologicalForecast(
       const maxY1 = isFirstDay ? max0 : max1;
       const maxY2 = isFirstDay ? max1 : max2;
 
-      // Interpolação por cosseno para uma curva fluida do rio
-      const mu2 = (1 - Math.cos(fraction * Math.PI)) / 2;
+      // Interpolação linear (evita cotovelo horizontal no início da projeção)
+      const mu2 = fraction;
       
       const interpLevel = y1 * (1 - mu2) + y2 * mu2;
       const interpMin = minY1 * (1 - mu2) + minY2 * mu2;

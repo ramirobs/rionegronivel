@@ -27,6 +27,57 @@ interface ForecastTrendChartProps {
   extraHeader?: React.ReactNode;
 }
 
+function LiveTickerDot(props: any) {
+  const { cx, cy, payload, chartData } = props;
+  const [liveValue, setLiveValue] = React.useState(payload.level);
+
+  React.useEffect(() => {
+    const idx = chartData.findIndex((d: any) => d.dateFormatted === 'Agora');
+    const nextPoint = chartData[idx + 1];
+    
+    if (!nextPoint) return;
+    
+    const diff = nextPoint.level - payload.level;
+    const msPerUpdate = 100; // 10 ticks per second is very satisfying
+    const diffPerUpdate = diff / (900000 / msPerUpdate); // 15 minutos = 900.000 ms
+    
+    const interval = setInterval(() => {
+      setLiveValue((prev: number) => prev + diffPerUpdate);
+    }, msPerUpdate);
+
+    return () => clearInterval(interval);
+  }, [payload.level, chartData]);
+
+  const idx = chartData.findIndex((d: any) => d.dateFormatted === 'Agora');
+  const nextPoint = chartData[idx + 1];
+  const isRising = nextPoint && nextPoint.level > payload.level;
+  const isFalling = nextPoint && nextPoint.level < payload.level;
+  const arrow = isRising ? '▲' : isFalling ? '▼' : '';
+  const arrowColor = isRising ? '#ef4444' : isFalling ? '#22c55e' : '#94a3b8';
+
+  return (
+    <g>
+      <circle cx={cx} cy={cy} r={12} fill="#3b82f6" opacity={0.6} className="animate-ping" style={{ transformOrigin: `${cx}px ${cy}px` }} />
+      <circle cx={cx} cy={cy} r={5} fill="#2563eb" stroke="#ffffff" strokeWidth={2} />
+      
+      {/* Ticker HUD */}
+      <g transform={`translate(${cx}, ${cy - 28})`}>
+        <rect x={-36} y={-11} width={72} height={20} rx={10} fill="#0f172a" stroke="#334155" strokeWidth={1} opacity={0.9} />
+        
+        <text x={2} y={3} textAnchor="middle" fill="#f8fafc" fontSize={10} fontWeight={800} alignmentBaseline="middle" fontFamily="monospace">
+          {liveValue.toFixed(5)}m
+        </text>
+        
+        {arrow && (
+          <text x={-26} y={3} textAnchor="middle" fill={arrowColor} fontSize={7} fontWeight={900} alignmentBaseline="middle">
+            {arrow}
+          </text>
+        )}
+      </g>
+    </g>
+  );
+}
+
 function TodayBadge(props: { viewBox?: { x?: number; y?: number } }) {
   const x = props.viewBox?.x ?? 0;
   return (
