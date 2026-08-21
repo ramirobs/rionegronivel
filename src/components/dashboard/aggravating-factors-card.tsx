@@ -22,9 +22,24 @@ export default function AggravatingFactorsCard({
   const soilSeverity = soilMoisture > 0.35 ? 'Crítico (Saturado)' : soilMoisture > 0.25 ? 'Atenção' : 'Seguro (Absorvendo)';
   const soilColor = soilMoisture > 0.35 ? 'text-rose-600 bg-rose-50' : soilMoisture > 0.25 ? 'text-amber-600 bg-amber-50' : 'text-emerald-600 bg-emerald-50';
 
-  // Avaliação de Montante
-  const upstreamSeverity = upstreamTrendRate > 0.05 ? 'Risco Alto' : upstreamTrendRate > 0.01 ? 'Atenção' : 'Estável';
-  const upstreamColor = upstreamTrendRate > 0.05 ? 'text-rose-600 bg-rose-50' : upstreamTrendRate > 0.01 ? 'text-amber-600 bg-amber-50' : 'text-emerald-600 bg-emerald-50';
+  // Avaliação de Montante (Cabeceiras - Fragosos / Piên)
+  const upstreamSeverity =
+    upstreamTrendRate > 0.05
+      ? 'Risco Alto'
+      : upstreamTrendRate > 0.01
+      ? 'Atenção'
+      : upstreamTrendRate < -0.01
+      ? 'Vazante'
+      : 'Estável';
+
+  const upstreamColor =
+    upstreamTrendRate > 0.05
+      ? 'text-rose-600 bg-rose-50'
+      : upstreamTrendRate > 0.01
+      ? 'text-amber-600 bg-amber-50'
+      : upstreamTrendRate < -0.01
+      ? 'text-sky-600 bg-sky-50'
+      : 'text-emerald-600 bg-emerald-50';
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-6 shadow-xs overflow-hidden">
@@ -89,7 +104,14 @@ export default function AggravatingFactorsCard({
               </span>
             </div>
             <p className="text-xs text-slate-600">
-              Rio Negro nas cabeceiras (Piên) está variando <strong className="text-slate-900">{(upstreamTrendRate * 100).toFixed(1)} cm/h</strong>.
+              Rio Negro nas cabeceiras (Fragosos / Piên) está{' '}
+              {upstreamTrendRate > 0.01 ? (
+                <>subindo a <strong className="text-slate-900">+{(upstreamTrendRate * 100).toFixed(1)} cm/h</strong>.</>
+              ) : upstreamTrendRate < -0.01 ? (
+                <>em vazante, descendo a <strong className="text-slate-900">{(Math.abs(upstreamTrendRate) * 100).toFixed(1)} cm/h</strong>.</>
+              ) : (
+                <>estável variando <strong className="text-slate-900">{(upstreamTrendRate * 100).toFixed(1)} cm/h</strong>.</>
+              )}
             </p>
           </div>
         </div>

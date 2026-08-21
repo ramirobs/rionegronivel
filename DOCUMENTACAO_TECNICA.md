@@ -26,11 +26,12 @@ O sistema integra múltiplas estações da bacia hidrográfica do Rio Negro para
 | Estação | Código ANA | Rio | Município / UF | Coordenadas | Função no Sistema |
 |---|---|---|---|---|---|
 | **Rio Negro (Principal)** | `65100001` | Rio Negro | Rio Negro – PR | -26.1114°S, -49.8044°W | Referência de nível e vazão urbana (Mafra/Rio Negro) |
-| **Piên (Montante)** | `65095000` | Rio Negro | Piên – PR | -26.1500°S, -49.5000°W | Sensor de antecedência de cheias nas cabeceiras |
+| **Fragosos (Montante)** | `65090000` | Rio Negro | Piên – PR | -26.1547°S, -49.3806°W | Sensor de antecedência de cheias nas cabeceiras |
+| **Fragosos (Pluviométrica)**| `02649018` | Rio Negro | Piên – PR | -26.1547°S, -49.3806°W | Medição de precipitação nas cabeceiras |
 | **Rio Negro (Pluviométrica)**| `02649006` | Rio Negro | Rio Negro – PR | -26.1000°S, -49.8000°W | Medição local de precipitação pluviométrica |
 
 > [!NOTE]
-> A estação principal `65100001` é a referência oficial para a régua urbana de Mafra e Rio Negro. A estação `65095000` em Piên monitora as cabeceiras da bacia a montante, antecipando ondas de cheia que levam de 24h a 48h para chegar à área urbana. Dados históricos de longo prazo (1930–2020) utilizam também os registros da estação convencional `65100000`.
+> A estação principal `65100001` é a referência oficial para a régua urbana de Mafra e Rio Negro. A estação fluviométrica `65090000` (Fragosos / Piên) monitora as cabeceiras da bacia a montante, antecipando ondas de cheia que levam de 24h a 48h para chegar à área urbana. Dados históricos de longo prazo (1930–2020) utilizam também os registros da estação convencional `65100000`.
 
 ---
 
@@ -271,9 +272,9 @@ Caso tenha ocorrido precipitação acumulada significativa nas últimas 24h ($P_
 $$\Delta h_{\text{residual}}(D_0) = P_{\text{24h}} \times 0{,}4 \times C_{r,\text{ajustado}}$$
 $$\Delta h_{\text{residual}}(D_{+1}) = P_{\text{24h}} \times 0{,}2 \times C_{r,\text{ajustado}}$$
 
-### 5.5 Propagação da Onda de Cheia a Montante (Estação Piên / Routing)
+### 5.5 Propagação da Onda de Cheia a Montante (Estação Fragosos / Piên / Routing)
 
-A telemetria da estação de cabeceira em **Piên** (`65095000`) fornece a taxa horária de variação $\dot{h}_{\text{montante}}$ (m/h). Quando $|\dot{h}_{\text{montante}}| > 0{,}01\text{ m/h}$ (variação $> 1\text{ cm/h}$), o modelo calcula a propagação da onda de montante (*hydraulic routing*) com tempo de viagem de 24h a 48h:
+A telemetria da estação de cabeceira em **Fragosos / Piên** (`65090000`) fornece a taxa horária de variação $\dot{h}_{\text{montante}}$ (m/h). Quando $|\dot{h}_{\text{montante}}| > 0{,}01\text{ m/h}$ (variação $> 1\text{ cm/h}$), o modelo calcula a propagação da onda de montante (*hydraulic routing*) com tempo de viagem de 24h a 48h:
 
 $$\Delta h_{\text{diário, montante}} = \dot{h}_{\text{montante}} \times 24 \quad [\text{m/dia}]$$
 
