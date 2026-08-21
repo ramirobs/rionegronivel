@@ -19,19 +19,18 @@ O **Hidro Alert** é uma aplicação web progressiva (PWA) desenvolvida em **Nex
 | Mapa de inundação | Manchas de inundação georreferenciadas por faixa de nível |
 | Alertas preventivos | Notificações push para a população com base em limiares críticos |
 
-### 1.2 Estação de Referência
+### 1.2 Estações de Monitoramento da Bacia
 
-| Atributo | Valor |
-|---|---|
-| **Código ANA** | `65100001` |
-| **Nome** | Rio Negro |
-| **Rio** | Rio Negro |
-| **Coordenadas** | -26.1114°S, -49.8044°W |
-| **Município** | Rio Negro – PR |
-| **Tipo** | Fluviométrica (nível + vazão) |
+O sistema integra múltiplas estações da bacia hidrográfica do Rio Negro para compor o diagnóstico em tempo real e as projeções futuras:
+
+| Estação | Código ANA | Rio | Município / UF | Coordenadas | Função no Sistema |
+|---|---|---|---|---|---|
+| **Rio Negro (Principal)** | `65100001` | Rio Negro | Rio Negro – PR | -26.1114°S, -49.8044°W | Referência de nível e vazão urbana (Mafra/Rio Negro) |
+| **Piên (Montante)** | `65095000` | Rio Negro | Piên – PR | -26.1500°S, -49.5000°W | Sensor de antecedência de cheias nas cabeceiras |
+| **Rio Negro (Pluviométrica)**| `02649006` | Rio Negro | Rio Negro – PR | -26.1000°S, -49.8000°W | Medição local de precipitação pluviométrica |
 
 > [!NOTE]
-> A estação 65100001 é a referência oficial do SNIRH/ANA para a bacia do Rio Negro na divisa PR/SC. Dados complementares podem ser obtidos da estação convencional `65100000` para séries históricas mais longas.
+> A estação principal `65100001` é a referência oficial para a régua urbana de Mafra e Rio Negro. A estação `65095000` em Piên monitora as cabeceiras da bacia a montante, antecipando ondas de cheia que levam de 24h a 48h para chegar à área urbana. Dados históricos de longo prazo (1930–2020) utilizam também os registros da estação convencional `65100000`.
 
 ---
 
@@ -41,16 +40,16 @@ O **Hidro Alert** é uma aplicação web progressiva (PWA) desenvolvida em **Nex
 graph TD
     A["ANA API REST (JSON)"] -->|"Token OAuth"| B["Cliente ana-api.ts"]
     C["ANA API SOAP (Legado)"] -->|"Fallback XML"| B
-    D["Open-Meteo API"] -->|"Previsão 7 dias"| E["Cliente weather-api.ts"]
+    D["Open-Meteo API"] -->|"Previsão 7d + Umidade do Solo"| E["Cliente weather-api.ts"]
     F["SNIRH Hidrotelemetria"] -->|"Scraping XLS"| G["Script baixar_snirh.py"]
 
-    B --> H["data-processing.ts"]
-    H -->|"Limpeza e Agregação"| I["API Routes (Next.js)"]
+    B -->|"Telemetria Rio Negro + Piên"| H["data-processing.ts"]
+    H -->|"Limpeza e Tendência Recente"| I["API Routes (Next.js)"]
     E --> I
     H --> J["statistics.ts"]
     J -->|"Gumbel / TR"| I
-    H --> K["hydrological-forecast.ts"]
-    E --> K
+    H -->|"Nível Atual + Taxa Piên"| K["hydrological-forecast.ts"]
+    E -->|"Chuva + Umidade do Solo"| K
     K -->|"Projeção 7 dias"| I
     I --> L["Dashboard (React)"]
     L --> M["Usuário Final"]
@@ -90,7 +89,7 @@ A classificação de risco segue os protocolos da **Defesa Civil** de Rio Negro 
 | ≥ 6,00 m | 🟠 **Alerta** | Laranja | Risco de alagamento em áreas baixas e ribeirinhas. |
 | ≥ 7,00 m | 🔴 **Emergência** | Vermelho | Enchente confirmada. Áreas ribeirinhas alagadas. |
 
-Implementação em [statistics.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/statistics.ts#L47-L63) e [constants.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/constants.ts#L36-L41).
+Implementação em [statistics.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/statistics.ts#L47-L63) e [constants.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/constants.ts#L48-L53).
 
 ### 3.2 Marcos Críticos Georreferenciados (Régua de Inundação)
 
@@ -219,92 +218,134 @@ Quando a série da ANA está indisponível, utiliza-se uma **série calibrada re
 
 ### 5.1 Modelo Conceitual
 
-O módulo [hydrological-forecast.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/hydrological-forecast.ts) implementa um **modelo chuva-nível simplificado** calibrado para a bacia do Rio Negro, baseado nos seguintes princípios:
+O módulo [hydrological-forecast.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/hydrological-forecast.ts) implementa um **modelo chuva-nível conceitual contínuo** calibrado especificamente para a bacia do Rio Negro com base nos achados de John (2021), integrando 7 módulos físicos e estatísticos:
 
-1. **Convolução hidrológica** (chuva → escoamento com retardo)
-2. **Recessão natural do nível** (drenagem gravitacional)
-3. **Inércia da tendência recente** (persistência da taxa de variação)
-4. **Cálculo estocástico de probabilidade** de atingir cotas críticas
+1. **Convolução hidrológica com hidrograma unitário de 7 dias** (tempo de concentração estendido).
+2. **Modulação por saturação / umidade do solo** (capacidade de infiltração vs. escoamento superficial).
+3. **Efeito residual de precipitação recente** (chuva acumulada nas últimas 24h).
+4. **Propagação hidrológica de montante** (*hydraulic routing* da onda de cheia de Piên/cabeceiras).
+5. **Recessão natural atenuada** (drenagem gravitacional lenta em direção à cota base de $1{,}63\text{ m}$).
+6. **Inércia da tendência recente** (persistência da taxa horária de subida/descida).
+7. **Cálculo estocástico de probabilidade e bandas de incerteza** ($z\text{-score}$ para cotas de alerta e emergência).
 
-### 5.2 Coeficiente de Resposta Chuva-Nível
+### 5.2 Coeficiente de Resposta e Modulação por Umidade do Solo
 
-O coeficiente $C_r = 0{,}038$ m/mm representa a sensibilidade do nível do rio à precipitação na bacia:
+O **coeficiente base de sensibilidade chuva-nível** é $C_r = 0{,}033\text{ m/mm}$, calibrado a partir da mediana do Quadro 9 da dissertação de John (2021). 
 
-$$\Delta h \approx C_r \times P_{efetiva}$$
+Para refletir a física de saturação do solo, a API Open-Meteo fornece a **umidade volumétrica do subsolo** ($\theta_{\text{solo}}$, medida na camada de 7 a 28 cm em $\text{m}^3/\text{m}^3$). A umidade modula o coeficiente de resposta via uma função quadrática limitada (*clamped*):
 
-Calibração empírica: aproximadamente **25 mm** de chuva acumulada na cabeceira elevam o rio em cerca de **0,85 m a 1,15 m** (resposta média de ~0,95 m).
+$$M_{\text{solo}} = \max\left(0{,}2;\; \min\left(2{,}0;\; \left(\frac{\theta_{\text{solo}}}{0{,}25}\right)^2\right)\right)$$
 
-### 5.3 Kernel de Propagação Hidrológica
+$$C_{r,\text{ajustado}} = C_r \times M_{\text{solo}}$$
 
-O **tempo de concentração** da bacia é estimado entre **24h e 48h**. A distribuição temporal do impacto da chuva no nível é modelada como um **hidrograma unitário discreto** (kernel de convolução):
+Onde $\theta_{\text{ref}} = 0{,}25\text{ m}^3/\text{m}^3$ (25%) é a umidade média histórica da bacia:
 
-| Defasagem | Peso | Descrição |
+| Estado do Solo | Umidade ($\theta_{\text{solo}}$) | Multiplicador ($M_{\text{solo}}$) | Resposta Efetiva ($C_{r,\text{ajustado}}$) | Efeito Dinâmico |
+|---|---|---|---|---|
+| 🟢 **Seco** | $< 0{,}20\text{ m}^3/\text{m}^3$ (<20%) | $0{,}20$ a $0{,}64$ | $0{,}007$ a $0{,}021\text{ m/mm}$ | Alta capacidade de infiltração; rio sobe pouco |
+| 🟡 **Médio / Normal** | $\approx 0{,}25\text{ m}^3/\text{m}^3$ (25%) | $1{,}00$ | $0{,}033\text{ m/mm}$ | Resposta padrão calibrada |
+| 🔴 **Saturado** | $> 0{,}35\text{ m}^3/\text{m}^3$ (>35%) | Até $2{,}00$ | $0{,}066\text{ m/mm}$ | Infiltração nula; precipitação vira enxurrada imediata |
+
+### 5.3 Kernel de Propagação Hidrológica (Hidrograma Unitário de 7 Dias)
+
+Conforme demonstrado por John (2021, pág. 106), as cheias na bacia do Rio Negro apresentam uma fase de ascensão longa (média de **7 a 15 dias**), resultante do relevo de baixa declividade e do extenso percurso fluvial.
+
+O modelo distribui o impacto de cada chuva ao longo de 7 dias através do kernel de pesos $W$:
+
+| Defasagem Temporal | Peso ($W_w$) | Fase Hidrológica |
 |---|---|---|
-| Dia 0 (mesmo dia) | 20% | Escoamento superficial direto rápido |
-| Dia +1 (dia seguinte) | 55% | **Pico do hidrograma** na régua de Mafra/Rio Negro |
-| Dia +2 | 20% | Cauda do hidrograma (escoamento subsuperficial) |
-| Dia +3 | 5% | Recessão final (fluxo de base tardio) |
+| **Dia 0** (mesmo dia) | 5% | Escoamento superficial direto imediato |
+| **Dia +1** (dia seguinte) | 15% | Chegada dos tributários próximos |
+| **Dia +2** | 25% | **Pico do hidrograma** principal na régua de Mafra/Rio Negro |
+| **Dia +3** | 25% | Sustentação do pico da bacia intermediária |
+| **Dia +4** | 15% | Contribuição das cabeceiras mais distantes |
+| **Dia +5** | 10% | Cauda do hidrograma (escoamento subsuperficial) |
+| **Dia +6** | 5% | Fluxo de base tardio |
 
-$$h_{contribuição}(t) = \sum_{w=0}^{3} P_{efetiva}(t-w) \times W_w \times C_r$$
+$$h_{\text{contribuição, chuva}}(t) = \sum_{w=0}^{6} P_{\text{efetiva}}(t-w) \times W_w \times C_{r,\text{ajustado}}$$
 
-Onde $W = [0{,}20;\ 0{,}55;\ 0{,}20;\ 0{,}05]$ são os pesos do kernel.
+### 5.4 Efeito Residual de Chuvas Recentes (Últimas 24h)
 
-### 5.4 Chuva Efetiva
+Caso tenha ocorrido precipitação acumulada significativa nas últimas 24h ($P_{\text{24h}} > 5\text{ mm}$), o modelo adiciona sua contribuição residual ainda em trânsito:
 
-A precipitação prevista é ponderada pelo **grau de certeza da previsão meteorológica**:
+$$\Delta h_{\text{residual}}(D_0) = P_{\text{24h}} \times 0{,}4 \times C_{r,\text{ajustado}}$$
+$$\Delta h_{\text{residual}}(D_{+1}) = P_{\text{24h}} \times 0{,}2 \times C_{r,\text{ajustado}}$$
 
-$$P_{efetiva} = P_{bruta} \times (0{,}4 + 0{,}6 \times p_{prob})$$
+### 5.5 Propagação da Onda de Cheia a Montante (Estação Piên / Routing)
 
-Onde $p_{prob} \in [0, 1]$ é a probabilidade de precipitação fornecida pela API meteorológica. Isso garante que previsões incertas tenham peso reduzido na projeção.
+A telemetria da estação de cabeceira em **Piên** (`65095000`) fornece a taxa horária de variação $\dot{h}_{\text{montante}}$ (m/h). Quando $|\dot{h}_{\text{montante}}| > 0{,}01\text{ m/h}$ (variação $> 1\text{ cm/h}$), o modelo calcula a propagação da onda de montante (*hydraulic routing*) com tempo de viagem de 24h a 48h:
 
-### 5.5 Recessão Natural do Nível
+$$\Delta h_{\text{diário, montante}} = \dot{h}_{\text{montante}} \times 24 \quad [\text{m/dia}]$$
 
-O modelo implementa uma **curva de recessão exponencial atenuada** baseada no excesso do nível acima da cota base de estiagem ($h_{base} = 3{,}80$ m):
+- **Dia +1 (Amanhã)**: recebe 40% da onda:
+  $$h_{\text{montante}}(D_{+1}) = \Delta h_{\text{diário, montante}} \times 0{,}40$$
+- **Dia +2 (Depois de amanhã)**: recebe 30% da onda:
+  $$h_{\text{montante}}(D_{+2}) = \Delta h_{\text{diário, montante}} \times 0{,}30$$
 
-$$R_{diária} = \min\left(0{,}28;\ (h - h_{base}) \times 0{,}09 + 0{,}04\right)$$
+### 5.6 Chuva Efetiva Ponderada por Certeza
 
-Onde $h$ é o nível atual. A recessão máxima é limitada a 0,28 m/dia para manter a fisicalidade do modelo.
+A precipitação diária bruta prevista ($P_{\text{bruta}}$) é ajustada pela probabilidade meteorológica de ocorrência ($p_{\text{prob}} \in [0, 1]$):
 
-### 5.6 Inércia da Tendência Recente
+$$P_{\text{efetiva}} = P_{\text{bruta}} \times (0{,}4 + 0{,}6 \times p_{\text{prob}})$$
 
-No primeiro dia de projeção, a taxa de variação recente (m/h) é considerada como **fator de inércia**, limitada entre -0,15 m e +0,25 m:
+### 5.7 Recessão Natural do Nível
 
-$$I = \max(-0{,}15;\ \min(0{,}25;\ \dot{h}_{recente} \times 12))$$
+A drenagem da bacia é lenta (levando de 21 a 52 dias para retornar aos níveis basais, cerca de 4,4x mais lenta que a subida). A curva de recessão diária opera sobre o excesso acima do nível médio de estiagem ($h_{\text{base}} = 1{,}63\text{ m}$):
 
-### 5.7 Equação de Atualização do Nível
+$$\text{Excesso} = \max(0;\; h_{i-1} - 1{,}63)$$
 
-Para cada dia $i$ da projeção (exceto o dia 0, que é o nível observado):
+$$R_{\text{diária}} = \min\left(0{,}50;\; \text{Excesso} \times 0{,}035 + 0{,}02\right)$$
 
-$$h_i = \max\left(2{,}5;\ h_{i-1} - R_i + \Delta h_{chuva,i} + I_i\right)$$
+### 5.8 Inércia da Tendência Recente
 
-### 5.8 Margens de Incerteza
+No primeiro dia de projeção ($D+1$), a taxa horária recente de variação local ($\dot{h}_{\text{recente}}$ em m/h) é incorporada como fator de inércia, limitada entre $-0{,}15\text{ m}$ e $+0{,}25\text{ m}$:
 
-A incerteza cresce com o horizonte temporal da previsão e com a magnitude da chuva esperada:
+$$I = \max(-0{,}15;\; \min(0{,}25;\; \dot{h}_{\text{recente}} \times 12))$$
 
-$$\sigma_i = 0{,}12 + (i - 1) \times 0{,}07 + \begin{cases} 0{,}30 & \text{se } P_i > 15 \text{ mm} \\ 0{,}08 & \text{caso contrário} \end{cases}$$
+### 5.9 Equação de Atualização do Nível
 
-- **Cenário otimista** (mínimo): $h_{min} = \max(2{,}0;\ h_{esperado} - \sigma)$
-- **Cenário pessimista** (máximo): $h_{max} = h_{esperado} + 1{,}35 \times \sigma$
+Para cada dia projetado $i \in [1, n-1]$ (onde o Dia 0 é o nível medido atual):
 
-### 5.9 Cálculo de Probabilidade de Enchente
+$$h_i = \max\left(1{,}63;\; h_{i-1} - R_i + h_{\text{contribuição}}(i) + I_i\right)$$
 
-A probabilidade de atingir uma cota crítica é estimada via uma **tabela de lookup z-score** simplificada:
+Onde $I_i$ só atua em $i = 1$ e $h_{\text{contribuição}}(i)$ soma a chuva local prevista, a chuva residual de 24h e o trânsito da onda de montante de Piên.
 
-$$z = \frac{h_{crítico} - h_{esperado}}{1{,}1 \times \sigma}$$
+### 5.10 Margens de Incerteza
 
-| z-score | Probabilidade |
-|---|---|
-| ≤ -1,5 | 98% |
-| ≤ -1,0 | 92% |
-| ≤ -0,5 | 80% |
-| ≤ 0,0 | 55% |
-| ≤ 0,5 | 35% |
-| ≤ 1,0 | 18% |
-| ≤ 1,5 | 8% |
-| ≤ 2,0 | 3% |
-| > 2,0 | 1% |
+A incerteza estatística cresce com o horizonte temporal e com a magnitude da precipitação:
 
-Este cálculo é aplicado tanto para a **cota de emergência** (7,00 m) quanto para a **cota de alerta** (6,00 m).
+$$\sigma_i = 0{,}12 + (i - 1) \times 0{,}07 + \begin{cases} 0{,}30 & \text{se } P_i > 15\text{ mm} \\ 0{,}08 & \text{caso contrário} \end{cases}$$
+
+- **Cenário otimista** (mínimo): $h_{\text{min}} = \max(1{,}63;\; h_{\text{esperado}} - \sigma_i)$
+- **Cenário pessimista** (máximo): $h_{\text{max}} = h_{\text{esperado}} + 1{,}35 \times \sigma_i$
+
+### 5.11 Cálculo de Probabilidade de Enchente
+
+A probabilidade diária de superar os limiares críticos (Alerta: 6,00 m; Emergência: 7,00 m) é calculada via $z\text{-score}$:
+
+$$z = \frac{h_{\text{crítico}} - h_{\text{esperado}}}{1{,}1 \times \sigma_i}$$
+
+| $z$-score | Probabilidade de Superação | Interpretação |
+|---|---|---|
+| $\le -1{,}5$ | 98% | Evento iminente / Praticamente certo |
+| $\le -1{,}0$ | 92% | Altíssima probabilidade |
+| $\le -0{,}5$ | 80% | Alta probabilidade |
+| $\le 0{,}0$ | 55% | Cota esperada atinge ou supera o limiar |
+| $\le 0{,}5$ | 35% | Risco moderado |
+| $\le 1{,}0$ | 18% | Risco baixo |
+| $\le 1{,}5$ | 8% | Risco muito baixo |
+| $\le 2{,}0$ | 3% | Improvável |
+| $> 2{,}0$ | 1% | Risco residual |
+
+### 5.12 Painel de Fatores Agravantes do Dashboard
+
+O componente [aggravating-factors-card.tsx](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/components/dashboard/aggravating-factors-card.tsx) resume esses sensores físicos para o público geral:
+
+| Sensor Físico | Variável | Faixas e Limiares | Mensagem no Painel |
+|---|---|---|---|
+| **Chuva Prevista (7d)** | $P_{\text{7d}}$ (mm) | $> 100\text{ mm}$ (Alto) / $> 40\text{ mm}$ (Médio) / Baixo | Volume acumulado previsto na bacia |
+| **Saturação do Solo** | $\theta_{\text{solo}}$ ($\text{m}^3/\text{m}^3$) | $> 35\%$ (Crítico) / $> 25\%$ (Atenção) / Seguro | Capacidade de absorção do solo vs. enxurrada |
+| **Onda de Cheia (Montante)** | $\dot{h}_{\text{montante}}$ (m/h) | $> 5\text{ cm/h}$ (Risco Alto) / $> 1\text{ cm/h}$ (Atenção) / Estável | Velocidade de subida do rio em Piên (cabeceiras) |
 
 Implementação completa em [hydrological-forecast.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/hydrological-forecast.ts#L60-L256).
 
@@ -369,13 +410,13 @@ A função `calculateSummaryStatistics()` em [statistics.ts](file:///Users/ramir
 
 ### 7.1 Fonte de Dados
 
-A previsão do tempo é obtida da **API Open-Meteo**, um serviço aberto que fornece previsões numéricas do tempo (NWP) baseadas em modelos globais e regionais:
+A previsão do tempo e os dados ambientais de solo são obtidos da **API Open-Meteo**, um serviço aberto que fornece previsões numéricas do tempo (NWP) baseadas em modelos globais e regionais (como ECMWF, GFS e ICON):
 
 - **URL Base**: `https://api.open-meteo.com/v1/forecast`
-- **Coordenadas**: -26.1114°S, -49.8044°W (centro da bacia)
+- **Coordenadas**: -26.1114°S, -49.8044°W (centro da bacia do Rio Negro)
 - **Horizonte**: 7 dias
-- **Variáveis diárias**: código WMO, temperatura máx/mín, precipitação acumulada, probabilidade de precipitação, velocidade do vento
-- **Variáveis horárias**: precipitação horária, probabilidade de precipitação, temperatura (72h)
+- **Variáveis diárias**: código WMO, temperatura máx/mín, precipitação acumulada (`precipitation_sum`), probabilidade de precipitação (`precipitation_probability_max`), velocidade máxima do vento
+- **Variáveis horárias**: precipitação horária, probabilidade horária de chuva, temperatura a 2m, **umidade volumétrica do solo na camada 7 a 28 cm** (`soil_moisture_7_to_28cm`)
 - **Timezone**: America/Sao_Paulo
 
 Implementação em [weather-api.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/weather-api.ts#L188-L289).
@@ -427,28 +468,51 @@ hidro-simulator/
 ├── src/
 │   ├── app/
 │   │   ├── api/
-│   │   │   ├── river-data/route.ts      ← Dados telemétricos em tempo real
-│   │   │   ├── precipitation/route.ts    ← Dados de precipitação
-│   │   │   ├── statistics/route.ts       ← Análise de Gumbel e TR
-│   │   │   ├── weather-forecast/route.ts ← Previsão + Projeção hidrológica
-│   │   │   ├── cron/check-alerts/        ← Verificação periódica de alertas
-│   │   │   └── notifications/            ← Push notifications (web-push)
-│   │   ├── page.tsx                      ← Dashboard principal
-│   │   └── layout.tsx                    ← Layout raiz + SEO + PWA
+│   │   │   ├── river-data/route.ts          ← Dados telemétricos em tempo real
+│   │   │   ├── precipitation/route.ts        ← Dados de precipitação acumulada
+│   │   │   ├── statistics/route.ts           ← Análise de Gumbel e TR
+│   │   │   ├── weather-forecast/route.ts     ← Previsão do tempo + Projeção hidrológica
+│   │   │   ├── cron/check-alerts/route.ts    ← Verificação periódica e disparo de alertas
+│   │   │   └── notifications/
+│   │   │       ├── subscribe/route.ts        ← Inscrição de notificações Web Push
+│   │   │       └── test/route.ts             ← Teste de envio de push
+│   │   ├── page.tsx                          ← Dashboard principal e controle de abas
+│   │   ├── layout.tsx                        ← Layout raiz + metadados SEO + PWA
+│   │   └── globals.css                       ← Estilos globais e Tailwind v4
 │   ├── lib/
-│   │   ├── ana-api.ts                    ← Cliente ANA (REST + SOAP)
-│   │   ├── weather-api.ts               ← Cliente Open-Meteo
-│   │   ├── data-processing.ts           ← Limpeza, agregação, tendência
-│   │   ├── statistics.ts                ← Gumbel, TR, estatísticas
-│   │   ├── hydrological-forecast.ts     ← Motor de projeção hidrológica
-│   │   ├── constants.ts                 ← Limiares, estações, configuração
-│   │   ├── push-service.ts              ← Serviço de notificações push
-│   │   └── utils.ts                     ← Utilitários auxiliares
-│   ├── components/dashboard/            ← 20 componentes React do dashboard
+│   │   ├── ana-api.ts                        ← Cliente ANA (REST JSON + SOAP legada)
+│   │   ├── weather-api.ts                   ← Cliente Open-Meteo (NWP + umidade do solo)
+│   │   ├── data-processing.ts               ← Limpeza, deduplicação, agregação e tendência
+│   │   ├── statistics.ts                    ← Gumbel, Período de Retorno e estatísticas
+│   │   ├── hydrological-forecast.ts         ← Motor de projeção hidrológica contínua (7d)
+│   │   ├── constants.ts                     ← Estações, limiares de risco e endpoints
+│   │   ├── push-service.ts                  ← Envio de notificações VAPID/Web Push
+│   │   ├── push-storage.ts                  ← Persistência de assinaturas de moradores
+│   │   └── utils.ts                         ← Utilitários auxiliares e formatação
+│   ├── components/dashboard/                ← 22 componentes React modulares do dashboard
+│   │   ├── hero-section.tsx                 ← Nível atual, status e data da última leitura
+│   │   ├── dynamic-alert-banner.tsx         ← Faixa de alerta responsiva e dinâmica
+│   │   ├── stats-cards.tsx                  ← Cards rápidos de métricas (taxa, chuva, pico)
+│   │   ├── aggravating-factors-card.tsx     ← Sensores físicos (Chuva, Solo e Piên)
+│   │   ├── friendly-summary.tsx             ← Resumo em linguagem natural para o cidadão
+│   │   ├── river-level-chart.tsx            ← Gráfico interativo com histórico de cotas
+│   │   ├── precipitation-chart.tsx          ← Gráfico de barras de precipitação
+│   │   ├── forecast-trend-chart.tsx         ← Projeção com bandas de incerteza e histórico
+│   │   ├── forecast-daily-cards.tsx         ← Previsão do tempo diária e risco por dia
+│   │   ├── flood-map.tsx / flood-map-client ← Mapa Leaflet com manchas e pontos críticos
+│   │   ├── flood-ruler.tsx                  ← Régua física vertical com cotas de referência
+│   │   ├── return-period.tsx                ← Tabela e análise estatística de Gumbel
+│   │   ├── interactive-simulator.tsx        ← Simulador de cenários hipotéticos de chuva
+│   │   ├── notification-dialog.tsx          ← Modal de inscrição de push notifications
+│   │   └── ... (outros componentes de apoio)
 │   └── data/
-│       └── flood-map-data.ts            ← Polígonos de inundação + pontos críticos
-└── worker/
-    └── index.ts                         ← Service Worker (PWA + cache)
+│       └── flood-map-data.ts                ← Polígonos de inundação e marcos críticos
+├── worker/
+│   └── index.ts                             ← Service Worker customizado (PWA + cache)
+├── docs/
+│   ├── METODOLOGIA.md                       ← Resumo da fundamentação metodológica
+│   └── dados_rio_negro_18_fev_a_18_ago_2026.xls ← Planilha com dados históricos SNIRH
+└── baixar_snirh.py                          ← Script auxiliar para download da telemetria SNIRH
 ```
 
 ---
