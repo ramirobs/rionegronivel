@@ -10,7 +10,7 @@ import {
   Sliders,
   Radio,
 } from 'lucide-react';
-import { CRITICAL_POINTS, type CriticalPoint } from '@/data/flood-map-data';
+import { CRITICAL_POINTS, type CriticalPoint, FLOOD_ZONES, type FloodZone } from '@/data/flood-map-data';
 
 interface FloodMapClientProps {
   currentLevel: number;
@@ -114,7 +114,38 @@ export default function FloodMapClient({ currentLevel }: FloodMapClientProps) {
     layersGroup.clearLayers();
     markersGroup.clearLayers();
 
-    // A. Renderiza Marcadores dos Pontos Críticos e Status
+    // A. Renderiza Manchas de Inundação (Polígonos Geoespaciais)
+    // Mostra o espalhamento fluido da água: a mancha ganha opacidade conforme o nível sobe.
+    FLOOD_ZONES.forEach((zone: FloodZone) => {
+      if (effectiveLevel >= zone.minLevel) {
+        
+        let visibilityRatio = 1.0;
+        if (effectiveLevel < zone.maxLevel) {
+           const range = zone.maxLevel - zone.minLevel;
+           const current = effectiveLevel - zone.minLevel;
+           visibilityRatio = Math.max(0.15, current / range); 
+        }
+
+        zone.polygons.forEach(polygonCoords => {
+          L.polygon(polygonCoords as [number, number][], {
+            color: zone.strokeColor,
+            weight: 2,
+            fillColor: zone.color,
+            fillOpacity: zone.fillOpacity * visibilityRatio,
+            lineCap: 'round',
+            lineJoin: 'round',
+            smoothFactor: 1
+          })
+          .bindPopup(`<div style="font-family: sans-serif; font-size: 12px; color: #1e293b;">
+            <h4 style="font-size: 14px; font-weight: 800; margin: 0 0 4px 0; color: ${zone.strokeColor};">${zone.name}</h4>
+            <p style="margin: 0;">${zone.description}</p>
+          </div>`)
+          .addTo(layersGroup);
+        });
+      }
+    });
+
+    // B. Renderiza Marcadores dos Pontos Críticos e Status
     CRITICAL_POINTS.forEach((point: CriticalPoint) => {
       const isFlooded = effectiveLevel >= point.floodThreshold;
       const isWarning = effectiveLevel >= point.floodThreshold - 1.0;
