@@ -68,7 +68,7 @@ O sistema opera em **três camadas de aquisição de dados** com mecanismo de fa
 
 ### 2.2 Normalização de Cotas
 
-A cota (nível d'água) fornecida pela ANA pode vir em **centímetros** ou **metros** dependendo do endpoint e da época de registro. A função `normalizeLevelToMeters()` em [ana-api.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/ana-api.ts#L167-L183) padroniza todos os valores para **metros**:
+A cota (nível d'água) fornecida pela ANA pode vir em **centímetros** ou **metros** dependendo do endpoint e da época de registro. A função `normalizeLevelToMeters()` em [ana-api.ts](src/lib/ana-api.ts#L167-L183) padroniza todos os valores para **metros**:
 
 - Valores > 30 são interpretados como centímetros e divididos por 100
 - Valores sentinela (8888, 9999) são descartados como dados inválidos
@@ -89,11 +89,11 @@ A classificação de risco segue os protocolos da **Defesa Civil** de Rio Negro 
 | ≥ 6,00 m | 🟠 **Alerta** | Laranja | Risco de alagamento em áreas baixas e ribeirinhas. |
 | ≥ 7,00 m | 🔴 **Emergência** | Vermelho | Enchente confirmada. Áreas ribeirinhas alagadas. |
 
-Implementação em [statistics.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/statistics.ts#L47-L63) e [constants.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/constants.ts#L48-L53).
+Implementação em [statistics.ts](src/lib/statistics.ts#L47-L63) e [constants.ts](src/lib/constants.ts#L48-L53).
 
 ### 3.2 Marcos Críticos Georreferenciados (Régua de Inundação)
 
-Os dados de [flood-map-data.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/data/flood-map-data.ts) mapeiam pontos de infraestrutura e bairros com seus respectivos limiares de inundação:
+Os dados de [flood-map-data.ts](src/data/flood-map-data.ts) mapeiam pontos de infraestrutura e bairros com seus respectivos limiares de inundação:
 
 | Ponto Crítico | Cidade | Cota de Inundação | Cota de Evacuação |
 |---|---|---|---|
@@ -157,7 +157,7 @@ $$\mu = \bar{x} - \gamma \cdot \beta$$
 
 Onde $\gamma = 0{,}5772156649\ldots$ é a **constante de Euler-Mascheroni**.
 
-Implementação em [statistics.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/statistics.ts#L98-L137) — função `calculateGumbel()`.
+Implementação em [statistics.ts](src/lib/statistics.ts#L98-L137) — função `calculateGumbel()`.
 
 ### 4.3 Probabilidade de Excedência
 
@@ -165,7 +165,7 @@ A **probabilidade anual de excedência** (probabilidade de que o nível $x$ seja
 
 $$P(X > x) = 1 - F(x) = 1 - \exp\left(-\exp\left(-\frac{x - \mu}{\beta}\right)\right)$$
 
-Implementação em [statistics.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/statistics.ts#L162-L168) — função `calculateExceedanceProbability()`.
+Implementação em [statistics.ts](src/lib/statistics.ts#L162-L168) — função `calculateExceedanceProbability()`.
 
 ### 4.4 Período de Retorno (Tempo de Recorrência)
 
@@ -175,7 +175,7 @@ $$T_R = \frac{1}{P(X > x)} = \frac{1}{1 - F(x)}$$
 
 **Interpretação**: Se $T_R = 50$ anos para um nível de 10,00 m, significa que, *em média*, esse nível é igualado ou superado **uma vez a cada 50 anos** (ou seja, em qualquer ano há 2% de probabilidade de ocorrência).
 
-Implementação em [statistics.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/statistics.ts#L178-L187) — função `returnPeriod()`.
+Implementação em [statistics.ts](src/lib/statistics.ts#L178-L187) — função `returnPeriod()`.
 
 ### 4.5 Função Quantil (Inversa de Gumbel)
 
@@ -187,7 +187,7 @@ Onde a **variável reduzida de Gumbel** $y_T$ é:
 
 $$y_T = -\ln\left(-\ln\left(1 - \frac{1}{T_R}\right)\right)$$
 
-Implementação em [statistics.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/statistics.ts#L199-L216) — função `gumbelQuantile()`.
+Implementação em [statistics.ts](src/lib/statistics.ts#L199-L216) — função `gumbelQuantile()`.
 
 ### 4.6 Tabela de Períodos de Retorno Padrão
 
@@ -202,15 +202,15 @@ O sistema gera automaticamente a tabela para os períodos padrão da hidrologia 
 | 50 | 2,00% | Barragens e proteção de áreas urbanas |
 | 100 | 1,00% | Projetos de alta responsabilidade |
 
-Implementação em [statistics.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/statistics.ts#L225-L241) — função `generateReturnPeriodTable()`.
+Implementação em [statistics.ts](src/lib/statistics.ts#L225-L241) — função `generateReturnPeriodTable()`.
 
 ### 4.7 Série Histórica Consolidada e Base Local Permanente
 
-Para garantir **100% de disponibilidade, robustez e velocidade instantânea (0 ms)** na análise estatística de Gumbel, o sistema armazena a série histórica completa de 96 anos (1930 a 2025) localmente no arquivo [historical-annual-maxima.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/data/historical-annual-maxima.ts).
+Para garantir **100% de disponibilidade, robustez e velocidade instantânea (0 ms)** na análise estatística de Gumbel, o sistema armazena a série histórica completa de 96 anos (1930 a 2025) localmente no arquivo [historical-annual-maxima.ts](src/data/historical-annual-maxima.ts).
 
 - **Base de Dados**: Contém as 96 máximas anuais (1930 a 2025) e o catálogo com todos os 78 eventos históricos de inundação registrados em RioMafra (incluindo 1983 com 14,57 m, 1992 com 14,39 m, 2014 com 13,68 m e 2023 com 14,00 m).
 - **Filtro da Tendência Recente (1990–2025)**: Para os cálculos de probabilidade e Período de Retorno (Gumbel), o sistema filtra automaticamente os registros a partir de 1990 (36 anos de dados), capturando o aumento na frequência das cheias urbanas apontado por John (2021).
-- **Integração Dinâmica do Ano Corrente (2026)**: A rota [statistics/route.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/app/api/statistics/route.ts) consulta apenas a telemetria recente do ano em curso. Se a cota atingida em 2026 for relevante, ela é incorporada em tempo de execução à série histórica.
+- **Integração Dinâmica do Ano Corrente (2026)**: A rota [statistics/route.ts](src/app/api/statistics/route.ts) consulta apenas a telemetria recente do ano em curso. Se a cota atingida em 2026 for relevante, ela é incorporada em tempo de execução à série histórica.
 
 ---
 
@@ -218,7 +218,7 @@ Para garantir **100% de disponibilidade, robustez e velocidade instantânea (0 m
 
 ### 5.1 Modelo Conceitual
 
-O módulo [hydrological-forecast.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/hydrological-forecast.ts) implementa um **modelo chuva-nível conceitual contínuo** calibrado especificamente para a bacia do Rio Negro com base nos achados de John (2021), integrando 7 módulos físicos e estatísticos:
+O módulo [hydrological-forecast.ts](src/lib/hydrological-forecast.ts) implementa um **modelo chuva-nível conceitual contínuo** calibrado especificamente para a bacia do Rio Negro com base nos achados de John (2021), integrando 7 módulos físicos e estatísticos:
 
 1. **Convolução hidrológica com hidrograma unitário de 7 dias** (tempo de concentração estendido).
 2. **Modulação por saturação / umidade do solo** (capacidade de infiltração vs. escoamento superficial).
@@ -339,7 +339,7 @@ $$z = \frac{h_{\text{crítico}} - h_{\text{esperado}}}{1{,}1 \times \sigma_i}$$
 
 ### 5.12 Painel de Fatores Agravantes do Dashboard
 
-O componente [aggravating-factors-card.tsx](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/components/dashboard/aggravating-factors-card.tsx) resume esses sensores físicos para o público geral:
+O componente [aggravating-factors-card.tsx](src/components/dashboard/aggravating-factors-card.tsx) resume esses sensores físicos para o público geral:
 
 | Sensor Físico | Variável | Faixas e Limiares | Mensagem no Painel |
 |---|---|---|---|
@@ -347,7 +347,7 @@ O componente [aggravating-factors-card.tsx](file:///Users/ramirobs/Documents/ant
 | **Saturação do Solo** | $\theta_{\text{solo}}$ ($\text{m}^3/\text{m}^3$) | $> 35\%$ (Crítico) / $> 25\%$ (Atenção) / Seguro | Capacidade de absorção do solo vs. enxurrada |
 | **Onda de Cheia (Montante)** | $\dot{h}_{\text{montante}}$ (m/h) | $> 5\text{ cm/h}$ (Risco Alto) / $> 1\text{ cm/h}$ (Atenção) / Estável | Velocidade de subida do rio em Piên (cabeceiras) |
 
-Implementação completa em [hydrological-forecast.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/hydrological-forecast.ts#L60-L256).
+Implementação completa em [hydrological-forecast.ts](src/lib/hydrological-forecast.ts#L60-L256).
 
 ---
 
@@ -355,7 +355,7 @@ Implementação completa em [hydrological-forecast.ts](file:///Users/ramirobs/Do
 
 ### 6.1 Limpeza e Validação
 
-A função `cleanRiverData()` em [data-processing.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/data-processing.ts#L58-L98) realiza:
+A função `cleanRiverData()` em [data-processing.ts](src/lib/data-processing.ts#L58-L98) realiza:
 
 1. Remoção de registros nulos, indefinidos ou com data inválida
 2. Limitação de valores negativos a zero
@@ -364,7 +364,7 @@ A função `cleanRiverData()` em [data-processing.ts](file:///Users/ramirobs/Doc
 
 ### 6.2 Cálculo de Tendência
 
-A função `calculateTrend()` em [data-processing.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/data-processing.ts#L107-L184) calcula a **taxa de variação do nível** em uma janela temporal:
+A função `calculateTrend()` em [data-processing.ts](src/lib/data-processing.ts#L107-L184) calcula a **taxa de variação do nível** em uma janela temporal:
 
 $$\dot{h} = \frac{h_{atual} - h_{anterior}}{\Delta t_{horas}} \quad [\text{m/h}]$$
 
@@ -378,7 +378,7 @@ Classificação:
 
 ### 6.3 Agregação Diária
 
-A função `aggregateByDay()` em [data-processing.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/data-processing.ts#L218-L294) agrupa leituras horárias/telemétricas em resumos diários:
+A função `aggregateByDay()` em [data-processing.ts](src/lib/data-processing.ts#L218-L294) agrupa leituras horárias/telemétricas em resumos diários:
 
 - **Nível médio diário**: $\bar{h}_{dia} = \frac{1}{n}\sum h_i$
 - **Nível máximo do dia**: $h_{max} = \max(h_i)$
@@ -396,7 +396,7 @@ Onde $\epsilon$ é um ruído oscilatório de baixa amplitude. Essa formulação 
 
 ### 6.5 Estatísticas Descritivas
 
-A função `calculateSummaryStatistics()` em [statistics.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/statistics.ts#L246-L282) calcula:
+A função `calculateSummaryStatistics()` em [statistics.ts](src/lib/statistics.ts#L246-L282) calcula:
 
 - Contagem de observações válidas ($n$)
 - Média aritmética ($\bar{x}$)
@@ -419,11 +419,11 @@ A previsão do tempo e os dados ambientais de solo são obtidos da **API Open-Me
 - **Variáveis horárias**: precipitação horária, probabilidade horária de chuva, temperatura a 2m, **umidade volumétrica do solo na camada 7 a 28 cm** (`soil_moisture_7_to_28cm`)
 - **Timezone**: America/Sao_Paulo
 
-Implementação em [weather-api.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/weather-api.ts#L188-L289).
+Implementação em [weather-api.ts](src/lib/weather-api.ts#L188-L289).
 
 ### 7.2 Códigos Meteorológicos WMO
 
-Os códigos de tempo seguem a padronização da **World Meteorological Organization (WMO)**, traduzidos para português em [weather-api.ts](file:///Users/ramirobs/Documents/antigravity/Hidro/hidro-simulator/src/lib/weather-api.ts#L48-L100).
+Os códigos de tempo seguem a padronização da **World Meteorological Organization (WMO)**, traduzidos para português em [weather-api.ts](src/lib/weather-api.ts#L48-L100).
 
 ### 7.3 Mecanismo de Fallback
 
@@ -457,7 +457,7 @@ Formato de resposta: XML. Parsing por regex de tags.
 
 ### 8.3 SNIRH Hidrotelemetria (Scraping)
 
-O script [baixar_snirh.py](file:///Users/ramirobs/Documents/antigravity/Hidro/baixar_snirh.py) faz download automatizado da série histórica da estação via interface web do SNIRH, exportando para formato `.xls` (Excel).
+O script [baixar_snirh.py](scripts/baixar_snirh.py) faz download automatizado da série histórica da estação via interface web do SNIRH, exportando para formato `.xls` (Excel).
 
 ---
 
@@ -513,7 +513,8 @@ hidro-simulator/
 ├── docs/
 │   ├── METODOLOGIA.md                       ← Resumo da fundamentação metodológica
 │   └── dados_rio_negro_18_fev_a_18_ago_2026.xls ← Planilha com dados históricos SNIRH
-└── baixar_snirh.py                          ← Script auxiliar para download da telemetria SNIRH
+└── scripts/
+    └── baixar_snirh.py                      ← Script auxiliar para download da telemetria SNIRH
 ```
 
 ---
