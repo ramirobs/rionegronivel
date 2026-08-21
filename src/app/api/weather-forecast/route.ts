@@ -189,10 +189,34 @@ export async function GET() {
       });
     }
 
-    // Cria o array exclusivo para o gráfico horário (48h)
+    // Cria o array exclusivo para o gráfico horário (48h + 12h de histórico)
     const hourlyChartData: CombinedChartPoint[] = [];
+
+    // Adiciona o passado recente (últimas 12 horas) no gráfico horário
+    if (cleanedRiver.length > 0) {
+      const nowMs = Date.now();
+      const dozeHorasAtras = nowMs - 12 * 60 * 60 * 1000;
+      
+      const past12h = cleanedRiver
+        .filter(p => new Date(p.date).getTime() >= dozeHorasAtras)
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        
+      for (const p of past12h) {
+        const pDate = new Date(p.date);
+        const pFormatted = `${String(pDate.getHours()).padStart(2, '0')}:${String(pDate.getMinutes()).padStart(2, '0')}`;
+        hourlyChartData.push({
+          date: pDate.toISOString(),
+          dateFormatted: pFormatted,
+          isObserved: true,
+          isForecast: false,
+          observedLevel: p.level,
+          level: p.level,
+          rain: p.precipitation || 0,
+        });
+      }
+    }
     
-    // Adiciona o ponto 'Hoje' como início do gráfico horário
+    // Adiciona o ponto 'Hoje' como transição do gráfico horário
     hourlyChartData.push({
       date: today.toISOString().split('T')[0],
       dateFormatted: 'Agora',

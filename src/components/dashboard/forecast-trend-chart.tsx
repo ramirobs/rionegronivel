@@ -363,7 +363,13 @@ export default function ForecastTrendChart({ data, projection, title, subtitle, 
               name="Nível Observado (m)"
               stroke="#0284c7"
               strokeWidth={3}
-              dot={{ r: 3, fill: '#0284c7' }}
+              dot={(props: any) => {
+                const { cx, cy, payload } = props;
+                if (!cx || !cy) return <g key={props.key || Math.random()} />;
+                if (payload.dateFormatted === 'Agora') return <g key={props.key || 'agora'} />; // Deixa pro expectedLevel desenhar o Agora
+                if (data.length <= 30) return <circle key={props.key || Math.random()} cx={cx} cy={cy} r={4} fill="#0284c7" stroke="#ffffff" strokeWidth={2} />;
+                return <g key={props.key || Math.random()} />;
+              }}
               activeDot={(props: any) => {
                 if (props.payload.observedLevel == null) return <g />;
                 return <circle cx={props.cx} cy={props.cy} r={6} fill="#0284c7" stroke="#ffffff" strokeWidth={2} />;
@@ -380,7 +386,20 @@ export default function ForecastTrendChart({ data, projection, title, subtitle, 
               stroke="#2563eb"
               strokeWidth={3}
               strokeDasharray="6 4"
-              dot={{ r: 4, fill: '#2563eb', stroke: '#ffffff', strokeWidth: 2 }}
+              dot={(props: any) => {
+                const { cx, cy, payload, key } = props;
+                if (!cx || !cy) return <g key={key || Math.random()} />;
+                if (payload.dateFormatted === 'Agora') {
+                  return (
+                    <g key={key || 'agora'}>
+                      <circle cx={cx} cy={cy} r={12} fill="#3b82f6" opacity={0.6} className="animate-ping" style={{ transformOrigin: `${cx}px ${cy}px` }} />
+                      <circle cx={cx} cy={cy} r={5} fill="#2563eb" stroke="#ffffff" strokeWidth={2} />
+                    </g>
+                  );
+                }
+                if (data.length <= 30) return <circle key={key || Math.random()} cx={cx} cy={cy} r={4} fill="#2563eb" stroke="#ffffff" strokeWidth={2} />;
+                return <g key={key || Math.random()} />;
+              }}
               activeDot={(props: any) => {
                 if (props.payload.expectedLevel == null) return <g />;
                 return <circle cx={props.cx} cy={props.cy} r={6} fill="#2563eb" stroke="#ffffff" strokeWidth={2} />;
