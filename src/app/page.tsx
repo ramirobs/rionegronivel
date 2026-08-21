@@ -86,6 +86,29 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastFetch, setLastFetch] = useState<string>('');
+  const [hourlyView, setHourlyView] = useState<'day' | '12h' | '24h' | '48h'>('day');
+
+  const filteredHourlyData = useCallback(() => {
+    if (!forecastData?.hourlyChartData) return [];
+    
+    if (hourlyView === '48h') return forecastData.hourlyChartData;
+    if (hourlyView === '12h') return forecastData.hourlyChartData.slice(0, 13);
+    if (hourlyView === '24h') return forecastData.hourlyChartData.slice(0, 25);
+    
+    // 'day' -> Restante do dia de hoje (até 23:00)
+    if (hourlyView === 'day') {
+       // Pega o dia do ponto "Agora"
+       const nowIso = forecastData.hourlyChartData[0]?.date || new Date().toISOString();
+       const todayDateStr = nowIso.split('T')[0];
+       
+       const endIdx = forecastData.hourlyChartData.findIndex((d, idx) => idx > 0 && !d.date.startsWith(todayDateStr));
+       
+       if (endIdx === -1) return forecastData.hourlyChartData; 
+       return forecastData.hourlyChartData.slice(0, endIdx);
+    }
+    
+    return forecastData.hourlyChartData;
+  }, [forecastData, hourlyView]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -319,12 +342,34 @@ export default function DashboardPage() {
 
           {forecastData && forecastData.success ? (
             <>
-              {/* Gráfico de Previsão Horária (48h) */}
+              {/* Gráfico de Previsão Horária */}
               <ForecastTrendChart
-                data={forecastData.hourlyChartData || []}
+                data={filteredHourlyData()}
                 projection={forecastData.projection}
-                title="Previsão Contínua de Nível (Próximas 48 Horas)"
+                title="Previsão Contínua de Nível (Horária)"
                 subtitle="Evolução suave do nível hora-a-hora para o curto prazo"
+                extraHeader={
+                  <div className="inline-flex bg-slate-200/80 p-1 rounded-xl shadow-xs">
+                    {[
+                      { label: 'Hoje', val: 'day' },
+                      { label: '+12h', val: '12h' },
+                      { label: '+24h', val: '24h' },
+                      { label: '+48h', val: '48h' },
+                    ].map((p) => (
+                      <button
+                        key={p.val}
+                        onClick={() => setHourlyView(p.val as 'day' | '12h' | '24h' | '48h')}
+                        className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                          hourlyView === p.val
+                            ? 'bg-white text-blue-700 shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                }
               />
 
               {/* Módulo de Alerta de Impacto Direto nas Vias/Bairros */}

@@ -1,4 +1,5 @@
 'use client';
+import React from 'react';
 
 import {
   ComposedChart,
@@ -23,6 +24,7 @@ interface ForecastTrendChartProps {
   projection: HydrologicalProjectionResult;
   title?: string;
   subtitle?: string;
+  extraHeader?: React.ReactNode;
 }
 
 function TodayBadge(props: { viewBox?: { x?: number; y?: number } }) {
@@ -53,7 +55,7 @@ function TodayBadge(props: { viewBox?: { x?: number; y?: number } }) {
   );
 }
 
-export default function ForecastTrendChart({ data, projection, title, subtitle }: ForecastTrendChartProps) {
+export default function ForecastTrendChart({ data, projection, title, subtitle, extraHeader }: ForecastTrendChartProps) {
   const trend = projection.overallTrend;
   const isRising = trend.direction === 'rising';
   const isFalling = trend.direction === 'falling';
@@ -80,8 +82,14 @@ export default function ForecastTrendChart({ data, projection, title, subtitle }
           </p>
         </div>
 
-        {/* Badge de Tendência Geral */}
-        <div className="flex items-center gap-2 self-start sm:self-center">
+        {/* Lado Direito do Cabeçalho */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 self-start sm:self-center">
+          {extraHeader && (
+            <div className="mr-0 sm:mr-2">
+              {extraHeader}
+            </div>
+          )}
+
           <div
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-black shadow-2xs ${
               isRising
