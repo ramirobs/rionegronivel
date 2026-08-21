@@ -16,6 +16,7 @@ import ForecastDailyCards from '@/components/dashboard/forecast-daily-cards';
 import SkeletonDashboard from '@/components/dashboard/skeleton-dashboard';
 import { DynamicAlertBanner } from '@/components/dashboard/dynamic-alert-banner';
 import AggravatingFactorsCard from '@/components/dashboard/aggravating-factors-card';
+import ImpactTimeline from '@/components/dashboard/impact-timeline';
 import { classifyRisk, calculateExceedanceProbability } from '@/lib/statistics';
 import type { RiskLevel } from '@/lib/constants';
 import type { WeatherForecastResponse } from '@/lib/weather-api';
@@ -324,6 +325,13 @@ export default function DashboardPage() {
                 projection={forecastData.projection}
                 title="Previsão Contínua de Nível (Próximas 48 Horas)"
                 subtitle="Evolução suave do nível hora-a-hora para o curto prazo"
+              />
+
+              {/* Módulo de Alerta de Impacto Direto nas Vias/Bairros */}
+              <ImpactTimeline 
+                hourlyData={forecastData.hourlyChartData || []}
+                dailyData={forecastData.chartData || []}
+                currentLevel={currentLevel}
               />
 
               {/* Gráfico de Tendência Futura (7 Dias) */}
