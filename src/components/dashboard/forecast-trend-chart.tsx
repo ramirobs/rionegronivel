@@ -21,6 +21,8 @@ import type { HydrologicalProjectionResult } from '@/lib/hydrological-forecast';
 interface ForecastTrendChartProps {
   data: CombinedChartPoint[];
   projection: HydrologicalProjectionResult;
+  title?: string;
+  subtitle?: string;
 }
 
 function TodayBadge(props: { viewBox?: { x?: number; y?: number } }) {
@@ -51,7 +53,7 @@ function TodayBadge(props: { viewBox?: { x?: number; y?: number } }) {
   );
 }
 
-export default function ForecastTrendChart({ data, projection }: ForecastTrendChartProps) {
+export default function ForecastTrendChart({ data, projection, title, subtitle }: ForecastTrendChartProps) {
   const trend = projection.overallTrend;
   const isRising = trend.direction === 'rising';
   const isFalling = trend.direction === 'falling';
@@ -70,11 +72,11 @@ export default function ForecastTrendChart({ data, projection }: ForecastTrendCh
               <Sparkles className="h-4 w-4" />
             </span>
             <h3 className="text-base sm:text-lg font-bold text-slate-900">
-              Previsão de Nível & Tendência (Próximos 7 Dias)
+              {title || 'Previsão de Nível & Tendência (Próximos 7 Dias)'}
             </h3>
           </div>
           <p className="text-xs text-slate-500 font-medium mt-1">
-            Integração do nível observado com previsão meteorológica do Open-Meteo
+            {subtitle || 'Integração do nível observado com previsão meteorológica do Open-Meteo'}
           </p>
         </div>
 

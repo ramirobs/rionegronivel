@@ -165,29 +165,11 @@ export async function GET() {
       lastPoint.dayOfWeek = 'Hoje';
     }
 
-    // Adiciona as horas futuras (próximas 48h)
-    if (projection.projectedHours && projection.projectedHours.length > 0) {
-      for (const h of projection.projectedHours) {
-        chartData.push({
-          date: h.time,
-          dateFormatted: h.timeFormatted, // ex: '14:00'
-          isObserved: false,
-          isForecast: true,
-          expectedLevel: h.expectedLevel,
-          minLevel: h.minLevel,
-          maxLevel: h.maxLevel,
-          level: h.expectedLevel,
-          rain: h.forecastRain,
-        });
-      }
-    }
-
-    // Adiciona os dias futuros projetados (pula os 2 primeiros dias, que já estão em horas)
-    const startIndex = (projection.projectedHours && projection.projectedHours.length > 0) ? 2 : 0;
-    for (let i = startIndex; i < projection.projectedDays.length; i++) {
+    // Adiciona os dias futuros projetados
+    for (let i = 0; i < projection.projectedDays.length; i++) {
       const proj = projection.projectedDays[i];
       // Ignora se for o mesmo dia de hoje para não duplicar no gráfico
-      if (proj.dateFormatted === todayFormatted && startIndex === 0) {
+      if (proj.dateFormatted === todayFormatted) {
         continue;
       }
 
@@ -207,11 +189,47 @@ export async function GET() {
       });
     }
 
+    // Cria o array exclusivo para o gráfico horário (48h)
+    const hourlyChartData: CombinedChartPoint[] = [];
+    
+    // Adiciona o ponto 'Hoje' como início do gráfico horário
+    hourlyChartData.push({
+      date: today.toISOString().split('T')[0],
+      dateFormatted: 'Agora',
+      isObserved: true,
+      isForecast: true,
+      isToday: true,
+      observedLevel: currentLevel,
+      expectedLevel: currentLevel,
+      minLevel: currentLevel,
+      maxLevel: currentLevel,
+      level: currentLevel,
+      rain: 0,
+    });
+
+    if (projection.projectedHours && projection.projectedHours.length > 0) {
+      for (const h of projection.projectedHours) {
+        // Ignora a hora '0' se já estivermos no agora, ou apenas insere normalmente
+        hourlyChartData.push({
+          date: h.time,
+          dateFormatted: h.timeFormatted, // ex: '14:00'
+          isObserved: false,
+          isForecast: true,
+          expectedLevel: h.expectedLevel,
+          minLevel: h.minLevel,
+          maxLevel: h.maxLevel,
+          level: h.expectedLevel,
+          rain: h.forecastRain,
+        });
+      }
+    }
+
     return NextResponse.json({
       success: true,
       weather: weatherData,
       projection,
       chartData,
+      hourlyChartData,
       currentLevel,
       soilMoisture: weatherData.currentSoilMoisture,
       lastUpdated: new Date().toISOString(),

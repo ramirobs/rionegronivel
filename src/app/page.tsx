@@ -68,6 +68,7 @@ interface ForecastApiResponse {
   weather: WeatherForecastResponse;
   projection: HydrologicalProjectionResult;
   chartData: CombinedChartPoint[];
+  hourlyChartData: CombinedChartPoint[];
   currentLevel: number;
   upstreamTrendRate?: number;
   soilMoisture?: number;
@@ -317,10 +318,20 @@ export default function DashboardPage() {
 
           {forecastData && forecastData.success ? (
             <>
-              {/* Gráfico de Tendência Futura */}
+              {/* Gráfico de Previsão Horária (48h) */}
+              <ForecastTrendChart
+                data={forecastData.hourlyChartData || []}
+                projection={forecastData.projection}
+                title="Previsão Contínua de Nível (Próximas 48 Horas)"
+                subtitle="Evolução suave do nível hora-a-hora para o curto prazo"
+              />
+
+              {/* Gráfico de Tendência Futura (7 Dias) */}
               <ForecastTrendChart
                 data={forecastData.chartData}
                 projection={forecastData.projection}
+                title="Previsão de Nível & Tendência (Próximos 7 Dias)"
+                subtitle="Integração do nível observado com previsão meteorológica"
               />
 
               {/* Fatores Agravantes do Modelo */}
