@@ -3,7 +3,7 @@
 // ============================================================
 
 import { RISK_THRESHOLDS, RiskLevel } from './constants';
-import { DailyWeatherForecast } from './weather-api';
+import { DailyWeatherForecast, HourlyWeatherForecast } from './weather-api';
 
 export interface ProjectedDay {
   date: string; // YYYY-MM-DD
@@ -21,9 +21,19 @@ export interface ProjectedDay {
   weatherIcon: string;
 }
 
+export interface ProjectedHour {
+  time: string; // ISO string
+  timeFormatted: string; // HH:mm
+  expectedLevel: number;
+  minLevel: number;
+  maxLevel: number;
+  forecastRain: number;
+}
+
 export interface HydrologicalProjectionResult {
   currentLevel: number;
   projectedDays: ProjectedDay[];
+  projectedHours: ProjectedHour[];
   overallTrend: {
     direction: 'rising' | 'falling' | 'stable';
     label: string; // "Tendência de Aumento", "Tendência de Redução", "Estável"
@@ -64,7 +74,8 @@ export function calculateHydrologicalForecast(
   forecastDaily: DailyWeatherForecast[],
   recentRain24h: number = 0,
   soilMoisture: number = 0.25, // m³/m³
-  upstreamTrendRate: number | null = 0 // m/h (Estação a montante)
+  upstreamTrendRate: number | null = 0, // m/h (Estação a montante)
+  forecastHourly?: HourlyWeatherForecast[] // opcional para gerar projectedHours
 ): HydrologicalProjectionResult {
   const safeCurrent = Math.max(1.0, isNaN(currentLevel) ? 4.5 : currentLevel);
   const nDays = forecastDaily.length;
@@ -267,9 +278,63 @@ export function calculateHydrologicalForecast(
     riskAdvice = 'Atenção com previsão de chuvas acumuladas. O rio subirá, mas com baixa chance de invasão de moradias.';
   }
 
+  const projectedHours: ProjectedHour[] = [];
+  if (forecastHourly && forecastHourly.length > 0 && projectedDays.length > 2) {
+    const nowStr = forecastHourly[0].time; // start time
+    
+    // Find expected levels
+    const level0 = safeCurrent;
+    const level1 = projectedDays[1].expectedLevel;
+    const level2 = projectedDays[2].expectedLevel;
+    
+    const min0 = safeCurrent;
+    const min1 = projectedDays[1].minLevel;
+    const min2 = projectedDays[2].minLevel;
+    
+    const max0 = safeCurrent;
+    const max1 = projectedDays[1].maxLevel;
+    const max2 = projectedDays[2].maxLevel;
+
+    // Loop até 48h (ou o tamanho do array horário)
+    const limit = Math.min(forecastHourly.length, 48);
+    for (let h = 0; h < limit; h++) {
+      const hData = forecastHourly[h];
+      const fraction = (h % 24) / 24;
+      const isFirstDay = h < 24;
+
+      const y1 = isFirstDay ? level0 : level1;
+      const y2 = isFirstDay ? level1 : level2;
+      const minY1 = isFirstDay ? min0 : min1;
+      const minY2 = isFirstDay ? min1 : min2;
+      const maxY1 = isFirstDay ? max0 : max1;
+      const maxY2 = isFirstDay ? max1 : max2;
+
+      // Interpolação por cosseno para uma curva fluida do rio
+      const mu2 = (1 - Math.cos(fraction * Math.PI)) / 2;
+      
+      const interpLevel = y1 * (1 - mu2) + y2 * mu2;
+      const interpMin = minY1 * (1 - mu2) + minY2 * mu2;
+      const interpMax = maxY1 * (1 - mu2) + maxY2 * mu2;
+      
+      // Formata a hora "HH:mm"
+      const dateObj = new Date(hData.time);
+      const timeFormatted = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+      projectedHours.push({
+        time: hData.time,
+        timeFormatted,
+        expectedLevel: Number(interpLevel.toFixed(2)),
+        minLevel: Number(interpMin.toFixed(2)),
+        maxLevel: Number(interpMax.toFixed(2)),
+        forecastRain: hData.precipitation,
+      });
+    }
+  }
+
   return {
     currentLevel: safeCurrent,
     projectedDays,
+    projectedHours,
     overallTrend: {
       direction,
       label: trendLabel,
