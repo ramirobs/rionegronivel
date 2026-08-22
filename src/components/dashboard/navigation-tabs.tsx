@@ -54,17 +54,14 @@ export default function NavigationTabs({
       shortLabel: 'Histórico',
       icon: BarChart3,
     },
-  ];
-
-  if (isElevatedRisk) {
-    tabs.push({
+    {
       id: 'emergency',
       label: 'Emergência & Contatos',
       shortLabel: 'Emergência',
       icon: ShieldAlert,
-      highlightEmergency: true,
-    });
-  }
+      highlightEmergency: isElevatedRisk,
+    },
+  ];
 
   return (
     <>
