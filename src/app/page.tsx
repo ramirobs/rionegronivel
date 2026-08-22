@@ -453,30 +453,33 @@ export default function DashboardPage() {
       {/* ABA 4: HISTÓRICO & DADOS ESTATÍSTICOS                                     */}
       {/* ========================================================================= */}
       {activeTab === 'history' && (
-        <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-200">
-          <div className="bg-gradient-to-r from-slate-800 via-slate-700 to-blue-900 rounded-2xl p-4 sm:p-6 text-white shadow-md">
+        <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-200">
+          <div className="bg-gradient-to-r from-slate-800 via-slate-700 to-blue-900 rounded-2xl p-4 sm:p-5 text-white shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-white/20 backdrop-blur-md rounded-xl">
-                <BarChart3 className="w-6 h-6 text-white" />
+              <div className="p-2 bg-white/20 backdrop-blur-md rounded-xl">
+                <BarChart3 className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-base sm:text-lg font-bold">
+                <h2 className="text-sm sm:text-base font-bold">
                   Histórico Hidrológico & Análise Probabilística
                 </h2>
-                <p className="text-xs sm:text-sm text-slate-300 mt-0.5">
-                  Registros históricos de nível, vazão e modelagem estatística de extremos (Distribuição Gumbel).
+                <p className="text-[11px] sm:text-xs text-slate-300 mt-0.5">
+                  Série histórica de níveis observados, simulação de cotas e distribuição estatística de extremos (Gumbel).
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Gráfico do Nível do Rio com Filtro de Dias */}
-          <div className="flex flex-col">
-            <div className="flex justify-between items-center mb-2 px-1">
-              <span className="text-sm font-bold text-slate-700">
-                Evolução Temporal do Nível
-              </span>
-              <div className="inline-flex bg-slate-200/80 p-1 rounded-xl shadow-xs">
+          {/* Gráfico do Nível do Rio com Seletor de Período Integrado */}
+          <RiverLevelChart
+            data={(riverData?.data ?? []).map((d) => ({
+              date: d.date,
+              level: d.level,
+            }))}
+            period={`${period} dias`}
+            isLoading={loadingPeriod}
+            rightAction={
+              <div className="inline-flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 shadow-2xs">
                 {[
                   { label: '7d', val: '7' },
                   { label: '30d', val: '30' },
@@ -487,9 +490,9 @@ export default function DashboardPage() {
                   <button
                     key={p.val}
                     onClick={() => handlePeriodChange(p.val)}
-                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
                       period === p.val
-                        ? 'bg-white text-blue-700 shadow-xs'
+                        ? 'bg-white text-blue-700 shadow-2xs'
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
@@ -497,18 +500,10 @@ export default function DashboardPage() {
                   </button>
                 ))}
               </div>
-            </div>
-            <RiverLevelChart
-              data={(riverData?.data ?? []).map((d) => ({
-                date: d.date,
-                level: d.level,
-              }))}
-              period={`${period} dias`}
-              isLoading={loadingPeriod}
-            />
-          </div>
+            }
+          />
 
-          {/* Probabilidade Histórica de Enchentes (Gumbel & TR) */}
+          {/* Simulador de Cotas e Probabilidade Histórica de Enchentes (Gumbel & TR) */}
           <ReturnPeriod
             table={statsData?.returnPeriodTable ?? []}
             annualMaxima={statsData?.annualMaxima ?? []}

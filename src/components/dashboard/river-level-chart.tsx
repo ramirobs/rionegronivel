@@ -17,27 +17,32 @@ interface RiverLevelChartProps {
   data: { date: string; level: number }[];
   period: string;
   isLoading?: boolean;
+  rightAction?: React.ReactNode;
 }
 
-export default function RiverLevelChart({ data, period, isLoading = false }: RiverLevelChartProps) {
+export default function RiverLevelChart({ data, period, isLoading = false, rightAction }: RiverLevelChartProps) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-6 shadow-xs flex flex-col h-[380px] sm:h-[420px]">
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          <h3 className="text-sm sm:text-base font-bold text-slate-900">Histórico de Nível</h3>
-          <p className="text-xs text-slate-500 font-medium">Variação da cota em metros</p>
-        </div>
+    <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-xs flex flex-col h-[300px] sm:h-[340px]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
+          <div>
+            <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">Evolução Temporal do Nível</h3>
+            <p className="text-[11px] text-slate-500 font-medium">Histórico recente de leituras telemétricas (metros)</p>
+          </div>
           {isLoading && (
-            <div className="flex items-center gap-1 text-[11px] font-medium text-sky-600 animate-pulse">
+            <div className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-600 animate-pulse ml-2">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              <span>Buscando ANA...</span>
+              <span>Atualizando...</span>
             </div>
           )}
+        </div>
+        {rightAction ? (
+          <div className="self-end sm:self-auto">{rightAction}</div>
+        ) : (
           <span className="text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1 rounded-full border border-slate-200">
             {period}
           </span>
-        </div>
+        )}
       </div>
 
       <div className={`flex-1 w-full min-h-0 transition-opacity duration-200 ${isLoading ? 'opacity-50' : 'opacity-100'}`}>
