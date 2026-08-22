@@ -52,6 +52,16 @@ function generateMockRiverData(days: number): RiverDataPoint[] {
   return points;
 }
 
+interface CachedRiverEntry {
+  data: RiverDataPoint[];
+  latest: RiverDataPoint | null;
+  trend: { rate: number; direction: 'rising' | 'stable' | 'falling' };
+  timestamp: number;
+}
+
+const riverCache = new Map<number, CachedRiverEntry>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos de cache no servidor
+
 /**
  * Formata data no padrão brasileiro DD/MM/YYYY esperado pela ANA.
  */
@@ -68,6 +78,17 @@ export async function GET(request: Request) {
     const daysParam = searchParams.get('days');
     const parsedDays = parseInt(daysParam || '7', 10);
     const days = isNaN(parsedDays) || parsedDays <= 0 ? 7 : Math.min(parsedDays, 365);
+    const forceRefresh = searchParams.get('refresh') === 'true';
+
+    const now = Date.now();
+    const cached = riverCache.get(days);
+    if (!forceRefresh && cached && now - cached.timestamp < CACHE_TTL_MS) {
+      return NextResponse.json({
+        data: cached.data,
+        latest: cached.latest,
+        trend: cached.trend,
+      });
+    }
 
     const endDate = new Date();
     const startDate = new Date(endDate.getTime() - days * 24 * 60 * 60 * 1000);
@@ -107,14 +128,23 @@ export async function GET(request: Request) {
     const latest = getLatestReading(cleanData) || cleanData[cleanData.length - 1];
     const trendResult = calculateTrend(cleanData);
 
-    return NextResponse.json({
+    const responsePayload = {
       data: cleanData,
       latest,
       trend: {
         rate: trendResult.rateOfChange,
         direction: trendResult.direction,
       },
-    });
+    };
+
+    if (cleanData.length > 0) {
+      riverCache.set(days, {
+        ...responsePayload,
+        timestamp: Date.now(),
+      });
+    }
+
+    return NextResponse.json(responsePayload);
   } catch (error) {
     console.error('[API river-data] Erro crítico no endpoint, gerando dados de contingência:', error);
 

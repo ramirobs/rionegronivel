@@ -83,22 +83,28 @@ export default function DashboardPage() {
   const [statsData, setStatsData] = useState<StatsResponse | null>(null);
   const [forecastData, setForecastData] = useState<ForecastApiResponse | null>(null);
   const [period, setPeriod] = useState('7');
+  const [periodCache, setPeriodCache] = useState<Record<string, RiverResponse>>({});
+  const [loadingPeriod, setLoadingPeriod] = useState(false);
   const [hourlyFilter, setHourlyFilter] = useState<'day' | '12' | '24' | '48'>('day');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastFetch, setLastFetch] = useState<string>('');
 
-  const fetchData = useCallback(async () => {
+  // Busca todos os módulos principais do sistema
+  const fetchAllData = useCallback(async (forceRefresh = false) => {
     try {
+      const refreshParam = forceRefresh ? '&refresh=true' : '';
       const [riverRes, precipRes, statsRes, forecastRes] = await Promise.allSettled([
-        fetch(`/api/river-data?days=${period}`),
+        fetch(`/api/river-data?days=${period}${refreshParam}`),
         fetch('/api/precipitation'),
         fetch('/api/statistics'),
         fetch('/api/weather-forecast'),
       ]);
 
       if (riverRes.status === 'fulfilled' && riverRes.value.ok) {
-        setRiverData(await riverRes.value.json());
+        const riverJson: RiverResponse = await riverRes.value.json();
+        setRiverData(riverJson);
+        setPeriodCache((prev) => ({ ...prev, [period]: riverJson }));
       }
       if (precipRes.status === 'fulfilled' && precipRes.value.ok) {
         setPrecipData(await precipRes.value.json());
@@ -119,10 +125,37 @@ export default function DashboardPage() {
     }
   }, [period]);
 
+  // Troca de período do histórico com cache em memória (instantâneo se já visitado)
+  const handlePeriodChange = useCallback(async (newPeriod: string) => {
+    setPeriod(newPeriod);
+
+    // 1. Se já está no cache da sessão, recupera instantaneamente (0 ms)
+    if (periodCache[newPeriod]) {
+      setRiverData(periodCache[newPeriod]);
+      return;
+    }
+
+    // 2. Se não estiver no cache, busca apenas essa série na API
+    setLoadingPeriod(true);
+    try {
+      const res = await fetch(`/api/river-data?days=${newPeriod}`);
+      if (res.ok) {
+        const data: RiverResponse = await res.json();
+        setRiverData(data);
+        setPeriodCache((prev) => ({ ...prev, [newPeriod]: data }));
+      }
+    } catch (err) {
+      console.error(`Erro ao buscar dados do período ${newPeriod}d:`, err);
+    } finally {
+      setLoadingPeriod(false);
+    }
+  }, [periodCache]);
+
   const handleManualRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchData();
-  }, [fetchData]);
+    setPeriodCache({}); // Limpa o cache para forçar atualização completa da ANA
+    fetchAllData(true);
+  }, [fetchAllData]);
 
   useEffect(() => {
     let isMounted = true;
@@ -140,7 +173,10 @@ export default function DashboardPage() {
 
         if (riverRes.status === 'fulfilled' && riverRes.value.ok) {
           const data = await riverRes.value.json();
-          if (isMounted) setRiverData(data);
+          if (isMounted) {
+            setRiverData(data);
+            setPeriodCache((prev) => ({ ...prev, [period]: data }));
+          }
         }
         if (precipRes.status === 'fulfilled' && precipRes.value.ok) {
           const data = await precipRes.value.json();
@@ -186,7 +222,7 @@ export default function DashboardPage() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleVisibilityChange);
     };
-  }, [period]);
+  }, []); // Carrega uma vez e roda em intervalo (trocas de período são gerenciadas pelo handlePeriodChange)
 
   const currentLevel = riverData?.latest?.level ?? forecastData?.currentLevel ?? 0;
   const trend = riverData?.trend ?? { rate: 0, direction: 'stable' as const };
@@ -458,7 +494,7 @@ export default function DashboardPage() {
                 ].map((p) => (
                   <button
                     key={p.val}
-                    onClick={() => setPeriod(p.val)}
+                    onClick={() => handlePeriodChange(p.val)}
                     className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                       period === p.val
                         ? 'bg-white text-blue-700 shadow-xs'
@@ -476,6 +512,7 @@ export default function DashboardPage() {
                 level: d.level,
               }))}
               period={`${period} dias`}
+              isLoading={loadingPeriod}
             />
           </div>
 

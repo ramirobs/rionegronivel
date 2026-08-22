@@ -11,12 +11,15 @@ import {
   ReferenceLine,
 } from 'recharts';
 
+import { Loader2 } from 'lucide-react';
+
 interface RiverLevelChartProps {
   data: { date: string; level: number }[];
   period: string;
+  isLoading?: boolean;
 }
 
-export default function RiverLevelChart({ data, period }: RiverLevelChartProps) {
+export default function RiverLevelChart({ data, period, isLoading = false }: RiverLevelChartProps) {
   return (
     <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-6 shadow-xs flex flex-col h-[380px] sm:h-[420px]">
       <div className="flex justify-between items-center mb-4">
@@ -24,12 +27,20 @@ export default function RiverLevelChart({ data, period }: RiverLevelChartProps) 
           <h3 className="text-sm sm:text-base font-bold text-slate-900">Histórico de Nível</h3>
           <p className="text-xs text-slate-500 font-medium">Variação da cota em metros</p>
         </div>
-        <span className="text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1 rounded-full border border-slate-200">
-          {period}
-        </span>
+        <div className="flex items-center gap-2">
+          {isLoading && (
+            <div className="flex items-center gap-1 text-[11px] font-medium text-sky-600 animate-pulse">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <span>Buscando ANA...</span>
+            </div>
+          )}
+          <span className="text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1 rounded-full border border-slate-200">
+            {period}
+          </span>
+        </div>
       </div>
 
-      <div className="flex-1 w-full min-h-0">
+      <div className={`flex-1 w-full min-h-0 transition-opacity duration-200 ${isLoading ? 'opacity-50' : 'opacity-100'}`}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 15, right: 10, left: -15, bottom: 0 }}>
             <defs>
