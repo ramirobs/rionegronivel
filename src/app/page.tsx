@@ -236,8 +236,10 @@ export default function DashboardPage() {
     if (hourlyFilter === '48') return allData;
     
     if (hourlyFilter === 'day') {
-      // Pega apenas os pontos que caem no mesmo dia de hoje
-      const todayStr = new Date().toISOString().split('T')[0];
+      // Pega apenas os pontos que caem no mesmo dia de hoje (usando data local para evitar fuso horário de UTC)
+      const d = new Date();
+      const todayStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      
       const todayData = allData.filter(d => d.date.startsWith(todayStr));
       // Garante que o gráfico nunca fique vazio ou com apenas 1 ponto se for fim do dia
       return todayData.length > 2 ? todayData : allData.slice(0, 12);

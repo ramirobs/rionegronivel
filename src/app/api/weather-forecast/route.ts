@@ -192,9 +192,12 @@ export async function GET() {
     // Cria o array exclusivo para o gráfico horário (48h)
     const hourlyChartData: CombinedChartPoint[] = [];
     
+    const currentLocalStr = today.toLocaleString('sv-SE', { timeZone: 'America/Sao_Paulo' }).replace(' ', 'T').substring(0, 16);
+    const currentDateStr = currentLocalStr.split('T')[0];
+
     // Adiciona o ponto 'Hoje' como início do gráfico horário
     hourlyChartData.push({
-      date: today.toISOString().split('T')[0],
+      date: currentDateStr,
       dateFormatted: 'Agora',
       isObserved: true,
       isForecast: true,
@@ -209,7 +212,9 @@ export async function GET() {
 
     if (projection.projectedHours && projection.projectedHours.length > 0) {
       for (const h of projection.projectedHours) {
-        // Ignora a hora '0' se já estivermos no agora, ou apenas insere normalmente
+        // Ignora as horas que já passaram (ou a hora atual, já coberta por 'Agora')
+        if (h.time <= currentLocalStr) continue;
+
         hourlyChartData.push({
           date: h.time,
           dateFormatted: h.timeFormatted, // ex: '14:00'
