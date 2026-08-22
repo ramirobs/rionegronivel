@@ -512,6 +512,7 @@ export default function DashboardPage() {
           <ReturnPeriod
             table={statsData?.returnPeriodTable ?? []}
             annualMaxima={statsData?.annualMaxima ?? []}
+            gumbelParams={statsData?.gumbelParams}
           />
         </div>
       )}
