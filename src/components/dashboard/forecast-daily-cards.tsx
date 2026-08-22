@@ -90,19 +90,22 @@ export default function ForecastDailyCards({ weather, projection }: ForecastDail
         </div>
       </div>
 
-      {/* Grade de 7 Dias de Previsão */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2.5 sm:gap-3">
+      {/* Grade de 7 Dias de Previsão (Carrossel Horizontal no Mobile / Grade no Desktop) */}
+      <div className="flex overflow-x-auto sm:grid sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 pb-3 sm:pb-0 snap-x snap-mandatory no-scrollbar -mx-1 px-1">
         {projection.projectedDays.map((day: ProjectedDay, index: number) => {
           const weatherDay = weather.daily[index] || {};
           const riskBadge = getRiskBadge(day.floodProbability);
           const RiskIcon = riskBadge.icon;
           const isToday = index === 0;
+          const isTomorrow = index === 1;
 
           return (
             <div
               key={day.date}
-              className={`rounded-2xl border p-3.5 flex flex-col justify-between transition-all bg-white hover:shadow-md ${
-                day.floodProbability >= 40
+              className={`min-w-[155px] sm:min-w-0 snap-start flex-1 sm:flex-initial rounded-2xl border p-3.5 flex flex-col justify-between transition-all bg-white hover:shadow-md ${
+                isToday
+                  ? 'border-blue-400 ring-2 ring-blue-100/80 shadow-xs bg-gradient-to-b from-blue-50/30 via-white to-white'
+                  : day.floodProbability >= 40
                   ? 'border-rose-300 ring-2 ring-rose-200/50'
                   : day.floodProbability >= 15
                   ? 'border-amber-300'
@@ -113,9 +116,16 @@ export default function ForecastDailyCards({ weather, projection }: ForecastDail
               <div>
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
                   <div>
-                    <span className="text-xs font-black text-slate-900 block">
-                      {isToday ? 'Hoje' : index === 1 ? 'Amanhã' : day.dayOfWeek}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-black text-slate-900 block">
+                        {isToday ? 'Hoje' : isTomorrow ? 'Amanhã' : day.dayOfWeek}
+                      </span>
+                      {isToday && (
+                        <span className="bg-blue-600 text-white text-[9px] font-extrabold px-1.5 py-0.2 rounded-md uppercase">
+                          Agora
+                        </span>
+                      )}
+                    </div>
                     <span className="text-[10px] font-semibold text-slate-400">
                       {day.dateFormatted}
                     </span>

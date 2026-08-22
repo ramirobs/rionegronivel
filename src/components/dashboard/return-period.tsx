@@ -1,5 +1,4 @@
-'use client';
-
+import { useState } from 'react';
 import {
   ScatterChart,
   Scatter,
@@ -10,14 +9,24 @@ import {
   ResponsiveContainer,
   ZAxis,
 } from 'recharts';
-import { HelpCircle, Sparkles } from 'lucide-react';
+import { HelpCircle, Sparkles, History, Landmark } from 'lucide-react';
 
 interface ReturnPeriodProps {
   table: { years: number; level: number; probability: number }[];
   annualMaxima: { year: number; maxLevel: number }[];
 }
 
+const HISTORICAL_LANDMARKS = [
+  { name: 'Cota de Emergência', level: 7.00, year: 'Referência', desc: 'Início do transbordamento em áreas baixas' },
+  { name: 'Ponte Metálica', level: 8.50, year: 'Ponto Crítico', desc: 'Água atinge as cabeceiras da ponte' },
+  { name: 'Enchente de 2014', level: 13.68, year: '2014', desc: 'Inundação severa em Mafra e Rio Negro' },
+  { name: 'Enchente de 2023', level: 14.00, year: '2023', desc: 'Segunda maior cheia dos últimos 40 anos' },
+  { name: 'Recorde Histórico', level: 14.57, year: '1983', desc: 'Maior inundação já registrada na história' },
+];
+
 export default function ReturnPeriod({ table, annualMaxima }: ReturnPeriodProps) {
+  const [selectedLandmark, setSelectedLandmark] = useState<number | null>(null);
+
   const fittedLineData = table
     .map((t) => ({
       x: t.years,
@@ -45,8 +54,8 @@ export default function ReturnPeriod({ table, annualMaxima }: ReturnPeriodProps)
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+    <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h3 className="text-base sm:text-lg font-bold text-slate-900">
             Probabilidade de Enchentes (Chances Históricas)
@@ -63,15 +72,57 @@ export default function ReturnPeriod({ table, annualMaxima }: ReturnPeriodProps)
       </div>
 
       {/* Explicação simples para cidadão */}
-      <div className="mb-5 p-3.5 rounded-xl bg-blue-50/70 border border-blue-100 flex items-start gap-2.5 text-xs text-slate-700">
+      <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-100 flex items-start gap-2.5 text-xs text-slate-700">
         <Sparkles className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
         <p className="leading-relaxed font-medium">
           <strong className="text-slate-900 font-bold">Como ler esta tabela: </strong>
-          Uma cheia de <strong>7,0 metros</strong> tem cerca de <strong>50% de chance</strong> de acontecer em qualquer ano (ocorre em média a cada 2 anos). Já uma cheia devastadora de <strong>14,0 metros</strong> (como em 2023) tem apenas <strong>4% de chance anual</strong> (em média a cada 25 anos).
+          Uma cheia de <strong>7,0 metros</strong> tem cerca de <strong>50% de chance</strong> de acontecer em qualquer ano (ocorre em média a cada 2 anos). Já uma cheia devastadora de <strong>14,0 metros</strong> (como em 2023) tem cerca de <strong>4% de chance anual</strong> (a cada ~25 anos).
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 items-center">
+      {/* Seletor Rápido de Marcos Históricos */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+          <Landmark className="h-4 w-4 text-blue-600" />
+          <span>Comparativo com Marcos Históricos de RioMafra:</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {HISTORICAL_LANDMARKS.map((m, idx) => {
+            const isSelected = selectedLandmark === idx;
+            return (
+              <button
+                key={m.name}
+                onClick={() => setSelectedLandmark(isSelected ? null : idx)}
+                type="button"
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                  isSelected
+                    ? 'bg-blue-600 text-white border-blue-700 shadow-xs scale-[1.02]'
+                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                <span>{m.name}</span>
+                <span className="ml-1.5 opacity-80">({m.level.toFixed(2)}m)</span>
+              </button>
+            );
+          })}
+        </div>
+        {selectedLandmark !== null && (
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-center justify-between gap-2 animate-in fade-in duration-200">
+            <div>
+              <strong className="text-slate-900">{HISTORICAL_LANDMARKS[selectedLandmark].name} ({HISTORICAL_LANDMARKS[selectedLandmark].year})</strong>:{' '}
+              {HISTORICAL_LANDMARKS[selectedLandmark].desc}. Cota: <span className="font-bold text-blue-700">{HISTORICAL_LANDMARKS[selectedLandmark].level.toFixed(2)} m</span>.
+            </div>
+            <button
+              onClick={() => setSelectedLandmark(null)}
+              className="text-[11px] font-bold text-slate-400 hover:text-slate-700 underline"
+            >
+              Fechar
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 items-center pt-2">
         {/* Table Section */}
         <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-2xs">
           <table className="w-full text-xs sm:text-sm text-left">

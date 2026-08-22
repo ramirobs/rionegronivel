@@ -17,6 +17,7 @@ function cn(...inputs: ClassValue[]) {
 
 interface StatsCardsProps {
   currentLevel: number;
+  flow?: number;
   maxHistorical: { level: number; date: string };
   precip24h: number;
   precip72h: number;
@@ -26,6 +27,7 @@ interface StatsCardsProps {
 
 export default function StatsCards({
   currentLevel,
+  flow,
   maxHistorical,
   precip24h,
   precip72h,
@@ -49,12 +51,15 @@ export default function StatsCards({
     formattedMaxDate = maxHistorical.date;
   }
 
+  // Se flow não vier da API, calcula pela curva-chave empírica do Rio Negro: Q ≈ 8.8 * h^2.4
+  const estimatedFlow = flow && flow > 0 ? flow : Math.round(8.8 * Math.pow(Math.max(1.0, currentLevel), 2.4));
+
   const cards = [
     {
-      title: 'Nível Atual do Rio',
-      value: currentLevel.toFixed(2),
-      unit: 'm',
-      description: 'Leitura em tempo real da estação',
+      title: 'Vazão Estimada do Rio',
+      value: `${estimatedFlow}`,
+      unit: 'm³/s',
+      description: 'Volume de água escoando na calha',
       icon: Waves,
       color:
         currentLevel >= 7

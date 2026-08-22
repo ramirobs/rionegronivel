@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import NavigationTabs, { type TabId } from '@/components/dashboard/navigation-tabs';
 import HeroSection from '@/components/dashboard/hero-section';
 import RiskGauge from '@/components/dashboard/risk-gauge';
-import FriendlySummary from '@/components/dashboard/friendly-summary';
 import FloodRuler from '@/components/dashboard/flood-ruler';
 import StatsCards from '@/components/dashboard/stats-cards';
 import RiverLevelChart from '@/components/dashboard/river-level-chart';
@@ -313,15 +312,7 @@ export default function DashboardPage() {
       {/* ========================================================================= */}
       {activeTab === 'live' && (
         <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-200">
-          {/* 1. Diagnóstico Amigável em Português Claro */}
-          <FriendlySummary
-            level={currentLevel}
-            trend={trend}
-            precip24h={precip24h}
-            riskLevel={riskLevel}
-          />
-
-          {/* 2. Destaque Visual: Cartão Principal + Termômetro de Risco */}
+          {/* 1. Destaque Visual: Cartão Principal Unificado + Termômetro de Risco */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             <div className="lg:col-span-2">
               <HeroSection
@@ -340,14 +331,15 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 3. Régua Prática de Inundação: O que acontece na cidade? */}
+          {/* 2. Régua Prática de Inundação: O que acontece na cidade? */}
           {currentLevel >= 4 && (
             <FloodRuler currentLevel={currentLevel} trend={trend} />
           )}
 
-          {/* 4. Cartões de Resumo Rápido */}
+          {/* 3. Cartões de Resumo Rápido & Indicadores Exclusivos */}
           <StatsCards
             currentLevel={currentLevel}
+            flow={riverData?.latest?.flow}
             maxHistorical={maxHistorical}
             precip24h={precip24h}
             precip72h={precip72h}
@@ -362,17 +354,17 @@ export default function DashboardPage() {
       {/* ========================================================================= */}
       {activeTab === 'forecast' && (
         <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-200">
-          <div className="bg-gradient-to-r from-blue-600 via-sky-600 to-indigo-700 rounded-2xl p-4 sm:p-6 text-white shadow-md">
+          <div className="bg-gradient-to-r from-blue-600 via-sky-600 to-indigo-700 rounded-2xl p-4 sm:p-6 text-white shadow-sm">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-white/20 backdrop-blur-md rounded-xl">
                 <CloudRain className="w-6 h-6 text-white" />
               </div>
               <div>
                 <h2 className="text-base sm:text-lg font-bold">
-                  Previsão Meteorológica & Projeção Hidrológica
+                  Previsão Meteorológica & Projeção Hidrológica (7 Dias)
                 </h2>
                 <p className="text-xs sm:text-sm text-blue-100 mt-0.5">
-                  Estimativa do comportamento do Rio Negro para os próximos 7 dias com base nas chuvas previstas na bacia hidrográfica.
+                  Estimativa do comportamento do Rio Negro para a próxima semana com base nas chuvas previstas na bacia hidrográfica.
                 </p>
               </div>
             </div>
@@ -380,7 +372,20 @@ export default function DashboardPage() {
 
           {forecastData && forecastData.success ? (
             <>
-              {/* Gráfico de Previsão Horária com Filtros */}
+              {/* 1. Visão Geral dos 7 Dias no Topo (Cards Diários com Previsão e Risco) */}
+              <ForecastDailyCards
+                weather={forecastData.weather}
+                projection={forecastData.projection}
+              />
+
+              {/* 2. Sensores Físicos e Fatores Agravantes do Modelo */}
+              <AggravatingFactorsCard 
+                precip7Days={forecastData.weather.totalForecastRain7Days}
+                soilMoisture={forecastData.soilMoisture}
+                riverTrendRate={trend.rate}
+              />
+
+              {/* 3. Gráfico de Previsão Horária Contínua com Filtros Rápidos */}
               <ForecastTrendChart
                 data={filteredHourlyData}
                 projection={forecastData.projection}
@@ -410,32 +415,19 @@ export default function DashboardPage() {
                 }
               />
 
-              {/* Módulo de Alerta de Impacto Direto nas Vias/Bairros */}
+              {/* 4. Módulo de Alerta de Impacto Direto nas Vias/Bairros */}
               <ImpactTimeline 
                 hourlyData={forecastData.hourlyChartData || []}
                 dailyData={forecastData.chartData || []}
                 currentLevel={currentLevel}
               />
 
-              {/* Gráfico de Tendência Futura (7 Dias) */}
+              {/* 5. Gráfico de Tendência Futura Completo (7 Dias) */}
               <ForecastTrendChart
                 data={forecastData.chartData}
                 projection={forecastData.projection}
                 title="Previsão de Nível & Tendência (Próximos 7 Dias)"
-                subtitle="Integração do nível observado com previsão meteorológica"
-              />
-
-              {/* Fatores Agravantes do Modelo */}
-              <AggravatingFactorsCard 
-                precip7Days={forecastData.weather.totalForecastRain7Days}
-                soilMoisture={forecastData.soilMoisture}
-                riverTrendRate={trend.rate}
-              />
-
-              {/* Cards Diários com Clima e Nível Projetado */}
-              <ForecastDailyCards
-                weather={forecastData.weather}
-                projection={forecastData.projection}
+                subtitle="Integração do nível observado com previsão meteorológica e faixas de incerteza"
               />
             </>
           ) : (
